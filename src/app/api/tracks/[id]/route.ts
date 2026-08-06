@@ -3,7 +3,7 @@ import { isAdminAuthenticated } from "@/lib/admin";
 import { isMongoConfigured } from "@/lib/mongodb";
 import { deleteTrackById, updateTrackFromAdmin } from "@/lib/store";
 import type { Pricing } from "@/lib/types";
-import { GENRES, REGIONS } from "@/lib/types";
+import { DEFAULT_PRICE_CENTS, GENRES, REGIONS } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -40,7 +40,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const country = String(body.country ?? "").trim();
     const pricing =
       (String(body.pricing ?? "free") as Pricing) === "paid" ? "paid" : "free";
-    const priceCents = Number(body.priceCents ?? 199);
+    const priceCents = Number(body.priceCents ?? DEFAULT_PRICE_CENTS);
     const description = String(body.description ?? "");
     const license = String(body.license ?? "");
 
@@ -66,7 +66,7 @@ export async function PATCH(request: Request, { params }: Params) {
         region,
         country,
         pricing,
-        priceCents: Number.isFinite(priceCents) ? priceCents : 199,
+        priceCents: Number.isFinite(priceCents) ? priceCents : DEFAULT_PRICE_CENTS,
         description,
         license,
       },

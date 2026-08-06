@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { GENRES, REGIONS } from "@/lib/types";
+import { DEFAULT_PRICE_CENTS, MIN_PRICE_CENTS } from "@/lib/types";
 
 type SignResponse = {
   cloudName: string;
@@ -108,7 +109,7 @@ export function UploadForm() {
           region: fd.get("region"),
           country: fd.get("country"),
           pricing: fd.get("pricing"),
-          priceCents: fd.get("priceCents"),
+          priceCents: Math.round(Number(fd.get("price") || 0) * 100),
           description: fd.get("description"),
           license: fd.get("license"),
           audioUrl: audioData.secure_url,
@@ -197,13 +198,16 @@ export function UploadForm() {
 
       {pricing === "paid" && (
         <Field
-          label="Price (USD cents)"
-          name="priceCents"
+          label="Price (USD)"
+          name="price"
           type="number"
-          defaultValue="199"
-          min={99}
-          step={1}
+          defaultValue={(DEFAULT_PRICE_CENTS / 100).toFixed(2)}
+          min={MIN_PRICE_CENTS / 100}
+          step="0.01"
         />
+        <p className="-mt-3 text-xs text-[color:var(--mist)]">
+          Minimum $0.50
+        </p>
       )}
 
       <label className="block space-y-2">

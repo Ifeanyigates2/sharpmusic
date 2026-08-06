@@ -6,6 +6,7 @@ import {
 } from "@/lib/cloudinary";
 import { connectMongo, isMongoConfigured } from "@/lib/mongodb";
 import type { Track, TrackInput } from "@/lib/types";
+import { MIN_PRICE_CENTS } from "@/lib/types";
 import { HiddenTrackModel } from "@/models/HiddenTrack";
 import { TrackModel } from "@/models/Track";
 
@@ -196,7 +197,7 @@ export function buildTrack(
     country: input.country.trim() || "Worldwide",
     durationSec: extras?.durationSec || 180,
     pricing: input.pricing,
-    priceCents: input.pricing === "free" ? 0 : Math.max(99, input.priceCents),
+    priceCents: input.pricing === "free" ? 0 : Math.max(MIN_PRICE_CENTS, input.priceCents),
     currency: "USD",
     audioUrl,
     coverImageUrl: extras?.coverImageUrl || "",

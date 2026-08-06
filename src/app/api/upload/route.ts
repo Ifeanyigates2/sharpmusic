@@ -7,7 +7,7 @@ import {
   addUploadedTrackFromCloudinary,
 } from "@/lib/store";
 import type { Pricing } from "@/lib/types";
-import { GENRES, REGIONS } from "@/lib/types";
+import { DEFAULT_PRICE_CENTS, GENRES, REGIONS } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -26,7 +26,7 @@ function parseInput(source: FormData | Record<string, unknown>) {
     region: get("region"),
     country: get("country").trim(),
     pricing: (get("pricing") || "free") as Pricing,
-    priceCents: Number(get("priceCents") || 199),
+    priceCents: Number(get("priceCents") || DEFAULT_PRICE_CENTS),
     description: get("description"),
     license: get("license"),
   };
@@ -90,7 +90,9 @@ export async function POST(request: Request) {
         {
           ...input,
           pricing: input.pricing === "paid" ? "paid" : "free",
-          priceCents: Number.isFinite(input.priceCents) ? input.priceCents : 199,
+          priceCents: Number.isFinite(input.priceCents)
+            ? input.priceCents
+            : DEFAULT_PRICE_CENTS,
         },
         {
           url: audioUrl,
@@ -126,7 +128,9 @@ export async function POST(request: Request) {
       {
         ...input,
         pricing: input.pricing === "paid" ? "paid" : "free",
-        priceCents: Number.isFinite(input.priceCents) ? input.priceCents : 199,
+        priceCents: Number.isFinite(input.priceCents)
+          ? input.priceCents
+          : DEFAULT_PRICE_CENTS,
       },
       file,
     );

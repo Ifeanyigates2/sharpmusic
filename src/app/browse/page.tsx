@@ -54,7 +54,7 @@ export default async function BrowsePage({ searchParams }: Props) {
           No tracks match those filters. Try clearing search or picking another region.
         </p>
       ) : (
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {tracks.map((track) => (
             <TrackCard key={track.id} track={track} />
           ))}

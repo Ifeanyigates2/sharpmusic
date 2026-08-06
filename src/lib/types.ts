@@ -1,5 +1,9 @@
 export type Pricing = "free" | "paid";
 
+/** Minimum paid track price in USD cents ($0.50) */
+export const MIN_PRICE_CENTS = 50;
+export const DEFAULT_PRICE_CENTS = 50;
+
 export interface Track {
   id: string;
   title: string;

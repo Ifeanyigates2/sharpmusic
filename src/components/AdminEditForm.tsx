@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { GENRES, REGIONS, type Track } from "@/lib/types";
+import { DEFAULT_PRICE_CENTS, MIN_PRICE_CENTS } from "@/lib/types";
 
 type SignResponse = {
   cloudName: string;
@@ -75,7 +76,7 @@ export function AdminEditForm({ track }: { track: Track }) {
         region: fd.get("region"),
         country: fd.get("country"),
         pricing: fd.get("pricing"),
-        priceCents: fd.get("priceCents"),
+        priceCents: Math.round(Number(fd.get("price") || 0) * 100),
         description: fd.get("description"),
         license: fd.get("license"),
       };
@@ -192,13 +193,20 @@ export function AdminEditForm({ track }: { track: Track }) {
 
       {pricing === "paid" && (
         <Field
-          label="Price (USD cents)"
-          name="priceCents"
+          label="Price (USD)"
+          name="price"
           type="number"
-          defaultValue={String(track.priceCents || 199)}
-          min={99}
-          step={1}
+          defaultValue={(
+            (track.priceCents >= MIN_PRICE_CENTS
+              ? track.priceCents
+              : DEFAULT_PRICE_CENTS) / 100
+          ).toFixed(2)}
+          min={MIN_PRICE_CENTS / 100}
+          step="0.01"
         />
+        <p className="-mt-3 text-xs text-[color:var(--mist)]">
+          Minimum $0.50
+        </p>
       )}
 
       <label className="block space-y-2">
