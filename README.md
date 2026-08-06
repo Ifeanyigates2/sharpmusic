@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# sharpmusic.com
 
-## Getting Started
+A worldwide music download webapp — browse a free library, buy paid tracks, and download music. Built with Next.js for Vercel.
 
-First, run the development server:
+## Features
+
+- **Browse & search** by genre, region, and free/paid
+- **Stream previews** with a global audio player
+- **Download MP3s** (free instantly; paid after demo checkout)
+- **Admin-only uploads** (audio on Cloudinary, accounts/tracks in MongoDB)
+- **Marketplace stub** ready to swap for Stripe
+
+## Quick start
 
 ```bash
+cp .env.example .env.local
+# set MONGODB_URI, SESSION_SECRET, ADMIN_*, CLOUDINARY_*
+npm install
+npm run seed:admin
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Admin upload: [http://localhost:3000/admin](http://localhost:3000/admin)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## MongoDB admin accounts
 
-## Learn More
+1. Set `MONGODB_URI` and `SESSION_SECRET` in `.env.local`.
+2. Set `ADMIN_EMAIL` / `ADMIN_PASSWORD`, then run `npm run seed:admin`.
+3. Sign in at `/admin`.
 
-To learn more about Next.js, take a look at the following resources:
+Only signed-in admins can upload.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Cloudinary audio storage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Uploads go directly to Cloudinary (up to **100MB** per file). Metadata is saved in MongoDB.
+
+Required env vars:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push this repo to GitHub.
+2. Import in [Vercel](https://vercel.com/new).
+3. Add domain `sharpmusic.com`.
+4. Set MongoDB, session, admin, and Cloudinary env vars.
+5. Deploy.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Stack
+
+- Next.js 16 + TypeScript + Tailwind CSS 4
+- MongoDB for admin accounts + track metadata
+- Cloudinary for audio storage/delivery

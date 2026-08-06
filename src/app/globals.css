@@ -1,26 +1,160 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #08110e;
+  --deep: #0c1713;
+  --foam: #e8f2ea;
+  --mist: #8fa396;
+  --signal: #b8f24a;
+  --ember: #ff5c3a;
+  --background: var(--ink);
+  --foreground: var(--foam);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ink);
+  color: var(--foam);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--signal) 55%, transparent);
+  color: var(--ink);
+}
+
+.field {
+  width: 100%;
+  border-radius: 2px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: var(--ink);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+  color: var(--foam);
+  outline: none;
+}
+
+.field:focus {
+  box-shadow: 0 0 0 1px var(--signal);
+}
+
+.hero-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 7rem 0 5rem;
+}
+
+.hero-visual {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 55% at 70% 35%, rgba(184, 242, 74, 0.18), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 15% 75%, rgba(255, 92, 58, 0.16), transparent 50%),
+    linear-gradient(180deg, #0a1612 0%, #07100d 55%, #08110e 100%);
+}
+
+.hero-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(232, 242, 234, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 242, 234, 0.03) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(180deg, black, transparent 85%);
+  animation: grid-drift 28s linear infinite;
+}
+
+.hero-visual::after {
+  content: "";
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  right: -12%;
+  top: -8%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 120deg,
+    transparent 0deg,
+    rgba(184, 242, 74, 0.22) 70deg,
+    transparent 140deg,
+    rgba(255, 92, 58, 0.18) 220deg,
+    transparent 300deg
+  );
+  filter: blur(8px);
+  animation: orbit-glow 18s ease-in-out infinite alternate;
+}
+
+@keyframes grid-drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(72px);
+  }
+}
+
+@keyframes orbit-glow {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  to {
+    transform: rotate(28deg) scale(1.08);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rise-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.rise-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.rise-delay-3 {
+  animation-delay: 0.36s;
+}
+
+.player-bar {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.has-player {
+  padding-bottom: 5.5rem;
 }

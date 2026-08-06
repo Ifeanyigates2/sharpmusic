@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // External demo audio (SoundHelix) is fetched server-side for downloads.
 };
 
 export default nextConfig;
