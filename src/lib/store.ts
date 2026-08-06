@@ -93,9 +93,11 @@ export async function getAllTracks(): Promise<Track[]> {
   for (const t of uploaded) {
     if (!hidden.has(t.id)) byId.set(t.id, t);
   }
-  return Array.from(byId.values()).sort(
-    (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
-  );
+  return Array.from(byId.values()).sort((a, b) => {
+    const byDate = +new Date(b.createdAt) - +new Date(a.createdAt);
+    if (byDate !== 0) return byDate;
+    return a.id.localeCompare(b.id);
+  });
 }
 
 /** All catalog tracks for admin management (includes source flag). */

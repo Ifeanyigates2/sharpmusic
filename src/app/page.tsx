@@ -2,6 +2,8 @@ import Link from "next/link";
 import { TrackCard } from "@/components/TrackCard";
 import { getAllTracks } from "@/lib/store";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const tracks = await getAllTracks();
   const featured = tracks.slice(0, 6);

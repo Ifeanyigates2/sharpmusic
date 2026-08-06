@@ -2,12 +2,14 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BrowseFilters } from "@/components/BrowseFilters";
 import { TrackCard } from "@/components/TrackCard";
-import { searchTracks } from "@/lib/store";
+import { getAllTracks, searchTracks } from "@/lib/store";
 
 export const metadata: Metadata = {
   title: "Browse",
   description: "Search and download free and paid music from artists worldwide.",
 };
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   searchParams: Promise<{
@@ -20,7 +22,13 @@ type Props = {
 
 export default async function BrowsePage({ searchParams }: Props) {
   const params = await searchParams;
-  const tracks = await searchTracks(params);
+  const hasFilters = Boolean(
+    params.q?.trim() || params.genre || params.region || params.pricing,
+  );
+  // Same catalog order as homepage when no filters are applied
+  const tracks = hasFilters
+    ? await searchTracks(params)
+    : await getAllTracks();
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-28 md:px-6">
