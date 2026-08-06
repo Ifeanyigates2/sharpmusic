@@ -51,6 +51,19 @@ export function createUploadSignature(
   };
 }
 
+export async function destroyCloudinaryAsset(
+  publicId: string,
+  resourceType: CloudinaryResourceType = "video",
+) {
+  if (!publicId || !isCloudinaryConfigured()) return;
+  const api = getCloudinary();
+  try {
+    await api.uploader.destroy(publicId, { resource_type: resourceType });
+  } catch (error) {
+    console.error("Cloudinary destroy failed", publicId, error);
+  }
+}
+
 export async function uploadAudioToCloudinary(
   file: File,
   publicId?: string,

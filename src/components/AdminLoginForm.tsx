@@ -7,7 +7,7 @@ import { Loader2, Lock } from "lucide-react";
 export function AdminLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/upload";
+  const next = params.get("next") || "/admin/tracks";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +27,7 @@ export function AdminLoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
-      router.replace(next.startsWith("/") ? next : "/upload");
+      router.replace(next.startsWith("/") ? next : "/admin/tracks");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

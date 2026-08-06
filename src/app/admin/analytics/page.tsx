@@ -1,37 +1,40 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
-import { UploadForm } from "@/components/UploadForm";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { isAdminAuthenticated } from "@/lib/admin";
+import { getAnalyticsSummary } from "@/lib/analytics";
 
 export const metadata: Metadata = {
-  title: "Upload",
-  description: "Admin-only music upload for sharpmusic.com.",
+  title: "Analytics",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function UploadPage() {
+export default async function AdminAnalyticsPage() {
   if (!(await isAdminAuthenticated())) {
-    redirect("/admin?next=/upload");
+    redirect("/admin?next=/admin/analytics");
   }
 
+  const summary = await getAnalyticsSummary();
+
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 pt-28 md:px-6">
-      <AdminNav current="upload" />
+    <div className="mx-auto max-w-5xl px-4 pb-24 pt-28 md:px-6">
+      <AdminNav current="analytics" />
       <div className="mb-8">
         <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-[color:var(--foam)]">
-          Upload music
+          Analytics
         </h1>
         <p className="mt-3 text-[color:var(--mist)]">
-          Admin only. Audio and covers go to Cloudinary; details are saved in
-          MongoDB.
+          Unique visitors and page views for today, this week, this month, and
+          this year.
         </p>
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 md:p-8">
-        <UploadForm />
-      </div>
+      <AnalyticsDashboard
+        periods={summary.periods}
+        last30Days={summary.last30Days}
+      />
     </div>
   );
 }
