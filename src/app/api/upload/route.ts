@@ -96,6 +96,8 @@ export async function POST(request: Request) {
           url: audioUrl,
           durationSec: Number(body.durationSec) || 180,
           publicId: String(body.publicId ?? ""),
+          coverImageUrl: String(body.coverImageUrl ?? "").trim(),
+          coverPublicId: String(body.coverPublicId ?? "").trim(),
         },
       );
 

@@ -2,6 +2,8 @@ import { v2 as cloudinary } from "cloudinary";
 
 let configured = false;
 
+export type CloudinaryResourceType = "image" | "video";
+
 export function isCloudinaryConfigured(): boolean {
   return Boolean(
     process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
@@ -28,15 +30,13 @@ export function getCloudinary() {
   return cloudinary;
 }
 
-export function createUploadSignature(folder = "sharpmusic/audio") {
-  const api = getCloudinary();
+export function createUploadSignature(
+  folder = "sharpmusic/audio",
+  resourceType: CloudinaryResourceType = "video",
+) {
+  getCloudinary();
   const timestamp = Math.round(Date.now() / 1000);
-  const params = {
-    timestamp,
-    folder,
-    resource_type: "video",
-  };
-  const signature = api.utils.api_sign_request(
+  const signature = cloudinary.utils.api_sign_request(
     { timestamp, folder },
     process.env.CLOUDINARY_API_SECRET!,
   );
@@ -47,7 +47,7 @@ export function createUploadSignature(folder = "sharpmusic/audio") {
     timestamp,
     folder,
     signature,
-    resourceType: params.resource_type,
+    resourceType,
   };
 }
 

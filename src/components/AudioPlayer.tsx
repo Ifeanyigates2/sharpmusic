@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { Pause, Play } from "lucide-react";
+import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
-import { coverGradient, formatDuration } from "@/lib/format";
+import { formatDuration } from "@/lib/format";
 
 export function AudioPlayer() {
   const { current, playing, progress, duration, toggle, seek } = usePlayer();
@@ -15,11 +16,9 @@ export function AudioPlayer() {
   return (
     <div className="player-bar fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[color:var(--ink)]/95 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 md:px-6">
-        <div
-          className="h-12 w-12 shrink-0 rounded-md"
-          style={{ background: coverGradient(current.coverHue) }}
-          aria-hidden
-        />
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md">
+          <CoverArt track={current} sizes="48px" />
+        </div>
         <div className="min-w-0 flex-1">
           <Link
             href={`/track/${current.id}`}

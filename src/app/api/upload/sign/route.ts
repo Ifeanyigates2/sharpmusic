@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/admin";
-import { createUploadSignature, isCloudinaryConfigured } from "@/lib/cloudinary";
+import {
+  createUploadSignature,
+  isCloudinaryConfigured,
+  type CloudinaryResourceType,
+} from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json(
       { error: "Admin sign-in required." },
@@ -20,7 +24,16 @@ export async function POST() {
   }
 
   try {
-    const signature = createUploadSignature();
+    const body = (await request.json().catch(() => ({}))) as {
+      kind?: string;
+    };
+    const kind = body.kind === "image" ? "image" : "audio";
+    const folder =
+      kind === "image" ? "sharpmusic/covers" : "sharpmusic/audio";
+    const resourceType: CloudinaryResourceType =
+      kind === "image" ? "image" : "video";
+
+    const signature = createUploadSignature(folder, resourceType);
     return NextResponse.json(signature);
   } catch (error) {
     console.error(error);

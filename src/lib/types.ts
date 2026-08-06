@@ -12,6 +12,7 @@ export interface Track {
   priceCents: number;
   currency: string;
   audioUrl: string;
+  coverImageUrl?: string;
   coverHue: number;
   downloads: number;
   description: string;

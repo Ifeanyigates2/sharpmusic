@@ -14,6 +14,40 @@ type SignResponse = {
   resourceType: string;
 };
 
+async function signUpload(kind: "audio" | "image") {
+  const signRes = await fetch("/api/upload/sign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind }),
+  });
+  const signData = (await signRes.json()) as SignResponse & { error?: string };
+  if (!signRes.ok) throw new Error(signData.error || "Could not sign upload");
+  return signData;
+}
+
+async function uploadToCloudinary(file: File, signData: SignResponse) {
+  const cloudFd = new FormData();
+  cloudFd.append("file", file);
+  cloudFd.append("api_key", signData.apiKey);
+  cloudFd.append("timestamp", String(signData.timestamp));
+  cloudFd.append("signature", signData.signature);
+  cloudFd.append("folder", signData.folder);
+
+  const cloudRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${signData.cloudName}/${signData.resourceType}/upload`,
+    { method: "POST", body: cloudFd },
+  );
+  const cloudData = await cloudRes.json();
+  if (!cloudRes.ok) {
+    throw new Error(cloudData.error?.message || "Cloudinary upload failed");
+  }
+  return cloudData as {
+    secure_url: string;
+    public_id: string;
+    duration?: number;
+  };
+}
+
 export function UploadForm() {
   const router = useRouter();
   const [pricing, setPricing] = useState<"free" | "paid">("free");
@@ -30,6 +64,7 @@ export function UploadForm() {
     const form = e.currentTarget;
     const fd = new FormData(form);
     const file = fd.get("audio");
+    const cover = fd.get("cover");
 
     if (!(file instanceof File) || file.size === 0) {
       setError("Audio file is required.");
@@ -37,32 +72,29 @@ export function UploadForm() {
       return;
     }
     if (file.size > 100 * 1024 * 1024) {
-      setError("File must be under 100MB.");
+      setError("Audio file must be under 100MB.");
+      setBusy(false);
+      return;
+    }
+    if (cover instanceof File && cover.size > 10 * 1024 * 1024) {
+      setError("Cover image must be under 10MB.");
       setBusy(false);
       return;
     }
 
     try {
-      setProgress("Signing Cloudinary upload…");
-      const signRes = await fetch("/api/upload/sign", { method: "POST" });
-      const signData = (await signRes.json()) as SignResponse & { error?: string };
-      if (!signRes.ok) throw new Error(signData.error || "Could not sign upload");
-
       setProgress("Uploading audio to Cloudinary…");
-      const cloudFd = new FormData();
-      cloudFd.append("file", file);
-      cloudFd.append("api_key", signData.apiKey);
-      cloudFd.append("timestamp", String(signData.timestamp));
-      cloudFd.append("signature", signData.signature);
-      cloudFd.append("folder", signData.folder);
+      const audioSign = await signUpload("audio");
+      const audioData = await uploadToCloudinary(file, audioSign);
 
-      const cloudRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${signData.cloudName}/${signData.resourceType}/upload`,
-        { method: "POST", body: cloudFd },
-      );
-      const cloudData = await cloudRes.json();
-      if (!cloudRes.ok) {
-        throw new Error(cloudData.error?.message || "Cloudinary upload failed");
+      let coverImageUrl = "";
+      let coverPublicId = "";
+      if (cover instanceof File && cover.size > 0) {
+        setProgress("Uploading cover image…");
+        const imageSign = await signUpload("image");
+        const imageData = await uploadToCloudinary(cover, imageSign);
+        coverImageUrl = imageData.secure_url;
+        coverPublicId = imageData.public_id;
       }
 
       setProgress("Saving track…");
@@ -79,9 +111,11 @@ export function UploadForm() {
           priceCents: fd.get("priceCents"),
           description: fd.get("description"),
           license: fd.get("license"),
-          audioUrl: cloudData.secure_url,
-          durationSec: Math.round(cloudData.duration || 180),
-          publicId: cloudData.public_id,
+          audioUrl: audioData.secure_url,
+          durationSec: Math.round(audioData.duration || 180),
+          publicId: audioData.public_id,
+          coverImageUrl,
+          coverPublicId,
         }),
       });
       const saveData = await saveRes.json();
@@ -100,7 +134,7 @@ export function UploadForm() {
     <form onSubmit={onSubmit} className="space-y-5">
       <label className="block space-y-2">
         <span className="text-sm text-[color:var(--mist)]">
-          Audio file (MP3, WAV, up to 100MB via Cloudinary)
+          Audio file (MP3, WAV, up to 100MB)
         </span>
         <input
           required
@@ -108,6 +142,18 @@ export function UploadForm() {
           name="audio"
           accept="audio/*,video/mp4,.mp3,.wav,.m4a,.aac,.flac"
           className="block w-full rounded-sm border border-dashed border-white/20 bg-white/[0.03] px-4 py-8 text-sm text-[color:var(--foam)] file:mr-4 file:rounded-sm file:border-0 file:bg-[color:var(--signal)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[color:var(--ink)]"
+        />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-[color:var(--mist)]">
+          Cover picture (JPG, PNG, WebP — up to 10MB)
+        </span>
+        <input
+          type="file"
+          name="cover"
+          accept="image/jpeg,image/png,image/webp,image/jpg"
+          className="block w-full rounded-sm border border-dashed border-white/20 bg-white/[0.03] px-4 py-6 text-sm text-[color:var(--foam)] file:mr-4 file:rounded-sm file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[color:var(--foam)]"
         />
       </label>
 

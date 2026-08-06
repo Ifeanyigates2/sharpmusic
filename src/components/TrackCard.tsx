@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { Download, Pause, Play } from "lucide-react";
+import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
 import {
-  coverGradient,
   formatDownloads,
   formatDuration,
   formatPrice,
@@ -23,11 +23,10 @@ export function TrackCard({ track }: { track: Track }) {
         className="relative block aspect-square w-full overflow-hidden"
         aria-label={`Play ${track.title}`}
       >
-        <div
-          className="absolute inset-0 transition duration-500 group-hover:scale-105"
-          style={{ background: coverGradient(track.coverHue) }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_45%)]" />
+        <div className="absolute inset-0 transition duration-500 group-hover:scale-105">
+          <CoverArt track={track} sizes="(max-width:768px) 100vw, 33vw" />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_45%)]" />
         <span className="absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--signal)] text-[color:var(--ink)] opacity-0 shadow-lg transition group-hover:opacity-100">
           {active ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
         </span>

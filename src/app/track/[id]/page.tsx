@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CoverArt } from "@/components/CoverArt";
 import { DownloadButton } from "@/components/DownloadButton";
 import { PlayButton } from "@/components/PlayButton";
 import {
-  coverGradient,
   formatDownloads,
   formatDuration,
   formatPrice,
@@ -35,11 +35,15 @@ export default async function TrackPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-28 md:px-6">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-end">
-        <div
-          className="aspect-square w-full max-w-md overflow-hidden rounded-lg"
-          style={{ background: coverGradient(track.coverHue) }}
-        >
-          <div className="h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_45%)]" />
+        <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-lg">
+          <CoverArt
+            track={track}
+            sizes="(max-width:1024px) 100vw, 420px"
+            priority
+          />
+          {!track.coverImageUrl && (
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_45%)]" />
+          )}
         </div>
 
         <div>

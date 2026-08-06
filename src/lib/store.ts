@@ -16,6 +16,7 @@ function toTrack(doc: {
   priceCents: number;
   currency: string;
   audioUrl: string;
+  coverImageUrl?: string;
   coverHue: number;
   downloads: number;
   description: string;
@@ -34,6 +35,7 @@ function toTrack(doc: {
     priceCents: doc.priceCents,
     currency: doc.currency,
     audioUrl: doc.audioUrl,
+    coverImageUrl: doc.coverImageUrl || "",
     coverHue: doc.coverHue,
     downloads: doc.downloads,
     description: doc.description,
@@ -109,7 +111,12 @@ export function buildTrack(
   id: string,
   input: TrackInput,
   audioUrl: string,
-  extras?: { durationSec?: number; cloudinaryPublicId?: string },
+  extras?: {
+    durationSec?: number;
+    cloudinaryPublicId?: string;
+    coverImageUrl?: string;
+    coverPublicId?: string;
+  },
 ): Track {
   const hue =
     [...input.title].reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 360;
@@ -126,6 +133,7 @@ export function buildTrack(
     priceCents: input.pricing === "free" ? 0 : Math.max(99, input.priceCents),
     currency: "USD",
     audioUrl,
+    coverImageUrl: extras?.coverImageUrl || "",
     coverHue: hue,
     downloads: 0,
     description:
@@ -142,6 +150,7 @@ export function buildTrack(
 export async function saveTrack(
   track: Track,
   cloudinaryPublicId = "",
+  coverPublicId = "",
 ): Promise<Track> {
   if (!isMongoConfigured()) {
     throw new Error("MONGODB_URI is required to save uploaded tracks");
@@ -150,7 +159,7 @@ export async function saveTrack(
   await connectMongo();
   await TrackModel.findOneAndUpdate(
     { id: track.id },
-    { ...track, cloudinaryPublicId },
+    { ...track, cloudinaryPublicId, coverPublicId },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
   return track;
@@ -178,7 +187,13 @@ export async function addUploadedTrack(
 
 export async function addUploadedTrackFromCloudinary(
   input: TrackInput,
-  audio: { url: string; durationSec?: number; publicId?: string },
+  audio: {
+    url: string;
+    durationSec?: number;
+    publicId?: string;
+    coverImageUrl?: string;
+    coverPublicId?: string;
+  },
 ): Promise<Track> {
   if (!isMongoConfigured()) {
     throw new Error("MongoDB is not configured");
@@ -188,6 +203,8 @@ export async function addUploadedTrackFromCloudinary(
   const track = buildTrack(id, input, audio.url, {
     durationSec: audio.durationSec,
     cloudinaryPublicId: audio.publicId,
+    coverImageUrl: audio.coverImageUrl,
+    coverPublicId: audio.coverPublicId,
   });
-  return saveTrack(track, audio.publicId || "");
+  return saveTrack(track, audio.publicId || "", audio.coverPublicId || "");
 }
