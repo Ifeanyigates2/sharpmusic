@@ -57,11 +57,8 @@ body {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 7rem 0 5rem;
+  display: block;
+  padding: 0;
 }
 
 .hero-visual {
