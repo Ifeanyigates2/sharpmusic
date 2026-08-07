@@ -45,6 +45,7 @@ export const GENRES = [
   "Indie",
   "Ambient",
   "Folk",
+  "Gospel",
   "Pop",
   "R&B",
   "World",
