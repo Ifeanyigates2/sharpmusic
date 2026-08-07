@@ -1,8 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CatalogScroller } from "@/components/CatalogScroller";
-import { coverGradient } from "@/lib/format";
+import { HeroBackdrop } from "@/components/HeroBackdrop";
 import { getAllTracks } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -10,88 +9,76 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const tracks = await getAllTracks();
   const featured = tracks.slice(0, 16);
-  const spotlight = tracks[0];
+  const heroCovers = tracks
+    .filter((t) => t.coverImageUrl)
+    .slice(0, 12)
+    .map(({ id, title, coverImageUrl, coverHue }) => ({
+      id,
+      title,
+      coverImageUrl,
+      coverHue,
+    }));
+
+  const covers =
+    heroCovers.length > 0
+      ? heroCovers
+      : tracks.slice(0, 8).map(({ id, title, coverImageUrl, coverHue }) => ({
+          id,
+          title,
+          coverImageUrl,
+          coverHue,
+        }));
 
   return (
     <>
       <section className="hero-shell">
         <div className="hero-visual" aria-hidden>
-          {spotlight?.coverImageUrl ? (
-            <Image
-              src={spotlight.coverImageUrl}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="hero-cover object-cover"
-            />
-          ) : spotlight ? (
-            <div
-              className="absolute inset-0 hero-cover"
-              style={{ background: coverGradient(spotlight.coverHue) }}
-            />
-          ) : null}
-          <div className="hero-veil" />
+          <HeroBackdrop covers={covers} />
         </div>
 
-        <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-end px-4 pb-14 pt-28 md:px-6 md:pb-20 md:pt-32">
-          <div className="max-w-2xl">
-            <div className="rise flex items-center gap-4 sm:gap-5">
-              <BrandLogo size="xl" href={null} priority />
-              <p className="font-[family-name:var(--font-display)] text-4xl font-extrabold leading-none tracking-[0.04em] text-[color:var(--foam)] sm:text-6xl md:text-7xl">
-                Sharp
-                <br />
-                Music
+        <div className="relative mx-auto w-full max-w-6xl px-4 pt-24 pb-5 md:px-6 md:pt-28 md:pb-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 max-w-xl">
+              <div className="rise flex items-center gap-3 sm:gap-4">
+                <BrandLogo size="lg" href={null} priority />
+                <p className="font-[family-name:var(--font-display)] text-3xl font-extrabold leading-none tracking-[0.04em] text-[color:var(--foam)] sm:text-5xl">
+                  Sharp Music
+                </p>
+              </div>
+              <h1 className="rise rise-delay-1 mt-3 font-[family-name:var(--font-display)] text-lg font-semibold leading-snug tracking-tight text-[color:var(--foam)] sm:text-2xl">
+                Music from everywhere, ready to download.
+              </h1>
+            </div>
+            <Link
+              href="/browse"
+              className="rise rise-delay-2 shrink-0 self-start rounded-sm bg-[color:var(--signal)] px-5 py-2.5 text-sm font-semibold text-[color:var(--ink)] transition hover:brightness-110 sm:self-auto"
+            >
+              Browse the catalog
+            </Link>
+          </div>
+        </div>
+
+        <div id="fresh" className="relative pb-10 md:pb-12">
+          <div className="mx-auto mb-4 flex max-w-6xl items-end justify-between gap-4 px-4 md:px-6">
+            <div>
+              <h2 className="font-[family-name:var(--font-display)] text-xl font-bold tracking-tight text-[color:var(--foam)] sm:text-2xl">
+                Fresh from the catalog
+              </h2>
+              <p className="mt-1 text-sm text-[color:var(--mist)]">
+                Newest uploads — hover to pause.
               </p>
             </div>
-
-            <h1 className="rise rise-delay-1 mt-8 font-[family-name:var(--font-display)] text-2xl font-semibold leading-tight tracking-tight text-[color:var(--foam)] sm:text-3xl md:text-4xl">
-              Music from everywhere, ready to download.
-            </h1>
-
-            <p className="rise rise-delay-2 mt-4 max-w-md text-base leading-relaxed text-[color:var(--mist)] sm:text-lg">
-              Stream the catalog, grab free tracks, or buy downloads with a
-              commercial license.
-            </p>
-
-            <div className="rise rise-delay-3 mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/browse"
-                className="rounded-sm bg-[color:var(--signal)] px-6 py-3 text-sm font-semibold text-[color:var(--ink)] transition hover:brightness-110"
-              >
-                Browse the catalog
-              </Link>
-              <a
-                href="#fresh"
-                className="text-sm font-semibold text-[color:var(--foam)] transition hover:text-[color:var(--signal)]"
-              >
-                Hear what's new
-              </a>
-            </div>
+            <Link
+              href="/browse"
+              className="shrink-0 text-sm font-semibold text-[color:var(--signal)] hover:underline"
+            >
+              View all →
+            </Link>
           </div>
-        </div>
-      </section>
 
-      <section id="fresh" className="relative scroll-mt-24 py-16 md:py-20">
-        <div className="mx-auto mb-8 flex max-w-6xl items-end justify-between gap-4 px-4 md:px-6">
-          <div>
-            <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-[color:var(--foam)] sm:text-3xl">
-              Fresh from the catalog
-            </h2>
-            <p className="mt-2 text-sm text-[color:var(--mist)]">
-              Newest uploads — hover to pause.
-            </p>
+          <div className="mx-auto max-w-6xl">
+            <CatalogScroller tracks={featured} />
           </div>
-          <Link
-            href="/browse"
-            className="shrink-0 text-sm font-semibold text-[color:var(--signal)] hover:underline"
-          >
-            View all →
-          </Link>
-        </div>
-
-        <div className="mx-auto max-w-6xl">
-          <CatalogScroller tracks={featured} />
         </div>
       </section>
 
