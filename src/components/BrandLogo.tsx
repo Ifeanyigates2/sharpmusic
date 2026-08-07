@@ -6,7 +6,7 @@ export function BrandLogo({
   href = "/",
   priority = false,
 }: {
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   href?: string | null;
   priority?: boolean;
 }) {
@@ -14,6 +14,7 @@ export function BrandLogo({
     sm: { box: "h-9 w-9", px: 36 },
     md: { box: "h-11 w-11", px: 44 },
     lg: { box: "h-16 w-16 sm:h-20 sm:w-20", px: 80 },
+    xl: { box: "h-24 w-24 sm:h-32 sm:w-32", px: 128 },
   }[size];
 
   const image = (
