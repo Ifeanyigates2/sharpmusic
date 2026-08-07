@@ -53,7 +53,10 @@ function toTrack(doc: {
     downloads: doc.downloads,
     description: doc.description,
     license: doc.license,
-    createdAt: doc.createdAt,
+    createdAt:
+      typeof doc.createdAt === "string"
+        ? doc.createdAt
+        : new Date(doc.createdAt as Date).toISOString(),
     cloudinaryPublicId: doc.cloudinaryPublicId || "",
     coverPublicId: doc.coverPublicId || "",
   };
@@ -82,23 +85,34 @@ async function readUploadedTracks(): Promise<StoredTrack[]> {
   }
 }
 
+function trackTime(track: Pick<Track, "createdAt" | "id">) {
+  const time = +new Date(track.createdAt);
+  return Number.isFinite(time) ? time : 0;
+}
+
+function sortNewestFirst(a: Track, b: Track) {
+  const byDate = trackTime(b) - trackTime(a);
+  if (byDate !== 0) return byDate;
+  return a.id.localeCompare(b.id);
+}
+
 export async function getAllTracks(): Promise<Track[]> {
   const [uploaded, hidden] = await Promise.all([
     readUploadedTracks(),
     getHiddenIds(),
   ]);
-  const byId = new Map<string, Track>();
-  for (const t of SEED_TRACKS) {
-    if (!hidden.has(t.id)) byId.set(t.id, t);
-  }
-  for (const t of uploaded) {
-    if (!hidden.has(t.id)) byId.set(t.id, t);
-  }
-  return Array.from(byId.values()).sort((a, b) => {
-    const byDate = +new Date(b.createdAt) - +new Date(a.createdAt);
-    if (byDate !== 0) return byDate;
-    return a.id.localeCompare(b.id);
-  });
+
+  const uploadedVisible = uploaded
+    .filter((t) => !hidden.has(t.id))
+    .sort(sortNewestFirst);
+
+  const uploadedIds = new Set(uploadedVisible.map((t) => t.id));
+  const demoVisible = SEED_TRACKS.filter(
+    (t) => !hidden.has(t.id) && !uploadedIds.has(t.id),
+  ).sort(sortNewestFirst);
+
+  // Newest uploads always lead the catalog; demo tracks follow.
+  return [...uploadedVisible, ...demoVisible];
 }
 
 /** All catalog tracks for admin management (includes source flag). */
@@ -121,9 +135,12 @@ export async function getAdminTracks(): Promise<
     }
   }
 
-  return items.sort(
-    (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
-  );
+  return items.sort((a, b) => {
+    if (a.source !== b.source) {
+      return a.source === "uploaded" ? -1 : 1;
+    }
+    return sortNewestFirst(a, b);
+  });
 }
 
 export async function getTrackById(id: string): Promise<Track | undefined> {
