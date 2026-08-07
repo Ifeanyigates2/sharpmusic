@@ -197,17 +197,19 @@ export function UploadForm() {
       </div>
 
       {pricing === "paid" && (
-        <Field
-          label="Price (USD)"
-          name="price"
-          type="number"
-          defaultValue={(DEFAULT_PRICE_CENTS / 100).toFixed(2)}
-          min={MIN_PRICE_CENTS / 100}
-          step="0.01"
-        />
-        <p className="-mt-3 text-xs text-[color:var(--mist)]">
-          Minimum $0.50
-        </p>
+        <>
+          <Field
+            label="Price (USD)"
+            name="price"
+            type="number"
+            defaultValue={(DEFAULT_PRICE_CENTS / 100).toFixed(2)}
+            min={MIN_PRICE_CENTS / 100}
+            step="0.01"
+          />
+          <p className="-mt-3 text-xs text-[color:var(--mist)]">
+            Minimum $0.50
+          </p>
+        </>
       )}
 
       <label className="block space-y-2">

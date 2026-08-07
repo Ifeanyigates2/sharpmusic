@@ -21,12 +21,17 @@ const body = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "sharpmusic.com — Download music from around the world",
-    template: "%s · sharpmusic.com",
+    default: "Sharp Music — Download music from around the world",
+    template: "%s · Sharp Music",
   },
   description:
-    "Browse, stream, buy, and download tracks shared by artists worldwide. Free library and marketplace on sharpmusic.com.",
+    "Browse, stream, buy, and download tracks from Sharp Music. Free library and marketplace on sharpmusic.com.",
   metadataBase: new URL("https://sharpmusic.com"),
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png" }],
+    shortcut: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

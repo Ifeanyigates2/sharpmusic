@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const links = [{ href: "/browse", label: "Browse" }];
 
@@ -29,13 +30,8 @@ export function Header() {
           : "bg-transparent"
       }`}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-        <Link
-          href="/"
-          className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-[0.08em] text-[color:var(--foam)]"
-        >
-          sharpmusic
-        </Link>
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6">
+        <BrandLogo size="md" priority />
 
         <nav className="hidden items-center gap-8 md:flex">
           {links.map((link) => (

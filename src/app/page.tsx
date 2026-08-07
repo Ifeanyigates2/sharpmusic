@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 import { TrackCard } from "@/components/TrackCard";
 import { getAllTracks } from "@/lib/store";
 
@@ -15,10 +16,13 @@ export default async function HomePage() {
         <div className="mx-auto w-full max-w-6xl px-4 pt-24 pb-6 md:px-6 md:pt-28 md:pb-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="rise font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-[0.06em] text-[color:var(--foam)] sm:text-5xl">
-                sharpmusic
-              </p>
-              <h1 className="rise rise-delay-1 mt-2 max-w-xl font-[family-name:var(--font-display)] text-lg font-semibold leading-snug tracking-tight text-[color:var(--foam)] sm:text-2xl">
+              <div className="rise flex items-center gap-3 sm:gap-4">
+                <BrandLogo size="lg" href={null} priority />
+                <p className="font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-[0.06em] text-[color:var(--foam)] sm:text-5xl">
+                  Sharp Music
+                </p>
+              </div>
+              <h1 className="rise rise-delay-1 mt-3 max-w-xl font-[family-name:var(--font-display)] text-lg font-semibold leading-snug tracking-tight text-[color:var(--foam)] sm:text-2xl">
                 Music from everywhere, ready to download.
               </h1>
             </div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { AdminEditForm } from "@/components/AdminEditForm";
 import { AdminNav } from "@/components/AdminNav";
+import { AdminTrackEditor } from "@/components/AdminTrackEditor";
 import { isAdminAuthenticated } from "@/lib/admin";
 import { getTrackById } from "@/lib/store";
 
@@ -36,12 +36,10 @@ export default async function AdminEditTrackPage({ params }: Props) {
           Edit track
         </h1>
         <p className="mt-3 text-[color:var(--mist)]">
-          Update details, replace audio, or change the cover picture.
+          Mix and enhance the audio, then update details or artwork.
         </p>
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 md:p-8">
-        <AdminEditForm track={track} />
-      </div>
+      <AdminTrackEditor track={track} />
     </div>
   );
 }
