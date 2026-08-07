@@ -4,10 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { TrackCard } from "@/components/TrackCard";
 import type { Track } from "@/lib/types";
 
-export function CatalogScroller({ tracks }: { tracks: Track[] }) {
+export function CatalogScroller({
+  tracks,
+  queue,
+}: {
+  tracks: Track[];
+  /** Full catalog for continuous autoplay (defaults to visible tracks). */
+  queue?: Track[];
+}) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
   const [duration, setDuration] = useState(40);
+  const playQueue = queue ?? tracks;
 
   useEffect(() => {
     const el = trackRef.current;
@@ -57,7 +65,7 @@ export function CatalogScroller({ tracks }: { tracks: Track[] }) {
               className="w-[42vw] max-w-[200px] min-w-[148px] shrink-0 sm:w-[180px] sm:max-w-none"
               aria-hidden={i >= tracks.length}
             >
-              <TrackCard track={track} />
+              <TrackCard track={track} queue={playQueue} />
             </div>
           ))}
         </div>

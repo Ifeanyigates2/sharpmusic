@@ -77,7 +77,7 @@ export default async function HomePage() {
           </div>
 
           <div className="mx-auto max-w-6xl">
-            <CatalogScroller tracks={featured} />
+            <CatalogScroller tracks={featured} queue={tracks} />
           </div>
         </div>
       </section>

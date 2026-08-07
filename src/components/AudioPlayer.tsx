@@ -1,13 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
 import { formatDuration } from "@/lib/format";
 
 export function AudioPlayer() {
-  const { current, playing, progress, duration, toggle, seek } = usePlayer();
+  const {
+    current,
+    playing,
+    progress,
+    duration,
+    toggle,
+    seek,
+    playNext,
+    playPrevious,
+    hasNext,
+    hasPrevious,
+  } = usePlayer();
 
   if (!current) return null;
 
@@ -44,17 +55,40 @@ export function AudioPlayer() {
             />
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-xs tabular-nums text-[color:var(--mist)] sm:inline">
-            {formatDuration(progress)} / {formatDuration(duration || current.durationSec)}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <span className="mr-1 hidden text-xs tabular-nums text-[color:var(--mist)] sm:inline">
+            {formatDuration(progress)} /{" "}
+            {formatDuration(duration || current.durationSec)}
           </span>
+          <button
+            type="button"
+            onClick={playPrevious}
+            disabled={!hasPrevious}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
+            aria-label="Previous track"
+          >
+            <SkipBack size={16} fill="currentColor" />
+          </button>
           <button
             type="button"
             onClick={toggle}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--signal)] text-[color:var(--ink)] transition hover:scale-105"
             aria-label={playing ? "Pause" : "Play"}
           >
-            {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+            {playing ? (
+              <Pause size={18} fill="currentColor" />
+            ) : (
+              <Play size={18} fill="currentColor" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={playNext}
+            disabled={!hasNext}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
+            aria-label="Next track"
+          >
+            <SkipForward size={16} fill="currentColor" />
           </button>
         </div>
       </div>

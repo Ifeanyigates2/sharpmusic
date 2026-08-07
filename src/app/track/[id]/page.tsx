@@ -9,7 +9,7 @@ import {
   formatPrice,
 } from "@/lib/format";
 import { hasPurchased } from "@/lib/purchases";
-import { getTrackById } from "@/lib/store";
+import { getAllTracks, getTrackById } from "@/lib/store";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -30,6 +30,7 @@ export default async function TrackPage({ params }: Props) {
   const track = await getTrackById(id);
   if (!track) notFound();
 
+  const catalog = await getAllTracks();
   const owned = track.pricing === "free" || (await hasPurchased(track.id));
 
   return (
@@ -84,7 +85,7 @@ export default async function TrackPage({ params }: Props) {
           </dl>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <PlayButton track={track} />
+            <PlayButton track={track} queue={catalog} />
             <DownloadButton track={track} initiallyOwned={owned} />
           </div>
         </div>

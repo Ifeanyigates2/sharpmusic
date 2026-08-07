@@ -7,7 +7,14 @@ import { usePlayer } from "@/components/PlayerProvider";
 import { formatDuration, formatPrice } from "@/lib/format";
 import type { Track } from "@/lib/types";
 
-export function TrackCard({ track }: { track: Track }) {
+export function TrackCard({
+  track,
+  queue,
+}: {
+  track: Track;
+  /** Catalog order used for autoplay / next-track streaming. */
+  queue?: Track[];
+}) {
   const { current, playing, playTrack } = usePlayer();
   const active = current?.id === track.id && playing;
 
@@ -15,7 +22,7 @@ export function TrackCard({ track }: { track: Track }) {
     <article className="track-card group relative">
       <button
         type="button"
-        onClick={() => playTrack(track)}
+        onClick={() => playTrack(track, queue)}
         className="relative block aspect-square w-full overflow-hidden rounded-sm bg-white/[0.03]"
         aria-label={`Play ${track.title}`}
       >
