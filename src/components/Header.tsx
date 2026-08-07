@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
-const links = [{ href: "/browse", label: "Browse" }];
+const links = [
+  { href: "/browse", label: "Browse" },
+  { href: "/news", label: "News" },
+];
 
 export function Header() {
   const pathname = usePathname();

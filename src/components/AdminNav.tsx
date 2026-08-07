@@ -4,13 +4,14 @@ import { AdminLogoutButton } from "@/components/AdminLogoutButton";
 const links = [
   { href: "/admin/tracks", id: "tracks", label: "Manage tracks" },
   { href: "/upload", id: "upload", label: "Upload" },
+  { href: "/admin/artists", id: "artists", label: "Artists" },
   { href: "/admin/analytics", id: "analytics", label: "Analytics" },
 ] as const;
 
 export function AdminNav({
   current,
 }: {
-  current: "tracks" | "upload" | "edit" | "analytics";
+  current: "tracks" | "upload" | "edit" | "analytics" | "artists";
 }) {
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
