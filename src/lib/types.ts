@@ -45,6 +45,7 @@ export const GENRES = [
   "Indie",
   "Ambient",
   "Folk",
+  "Pop",
   "R&B",
   "World",
 ] as const;
