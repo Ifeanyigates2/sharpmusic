@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
-import { TrackCard } from "@/components/TrackCard";
+import { CatalogScroller } from "@/components/CatalogScroller";
 import { coverGradient } from "@/lib/format";
 import { getAllTracks } from "@/lib/store";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const tracks = await getAllTracks();
-  const featured = tracks.slice(0, 8);
+  const featured = tracks.slice(0, 16);
   const spotlight = tracks[0];
 
   return (
@@ -72,17 +72,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section
-        id="fresh"
-        className="relative mx-auto max-w-6xl scroll-mt-24 px-4 py-16 md:px-6 md:py-20"
-      >
-        <div className="mb-8 flex items-end justify-between gap-4">
+      <section id="fresh" className="relative scroll-mt-24 py-16 md:py-20">
+        <div className="mx-auto mb-8 flex max-w-6xl items-end justify-between gap-4 px-4 md:px-6">
           <div>
             <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-[color:var(--foam)] sm:text-3xl">
               Fresh from the catalog
             </h2>
             <p className="mt-2 text-sm text-[color:var(--mist)]">
-              Newest uploads first — play instantly, download in one tap.
+              Newest uploads — hover to pause.
             </p>
           </div>
           <Link
@@ -93,17 +90,9 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {featured.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
-            {featured.map((track) => (
-              <TrackCard key={track.id} track={track} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-[color:var(--mist)]">
-            No tracks yet. Check back soon.
-          </p>
-        )}
+        <div className="mx-auto max-w-6xl">
+          <CatalogScroller tracks={featured} />
+        </div>
       </section>
 
       <section className="border-t border-white/10">

@@ -22,7 +22,7 @@ export function TrackCard({ track }: { track: Track }) {
         <div className="absolute inset-0 transition duration-500 group-hover:scale-[1.04]">
           <CoverArt
             track={track}
-            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
+            sizes="(max-width:640px) 50vw, 200px"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-80" />
