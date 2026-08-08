@@ -4,6 +4,7 @@ import { AdminLogoutButton } from "@/components/AdminLogoutButton";
 const links = [
   { href: "/admin/tracks", id: "tracks", label: "Manage tracks" },
   { href: "/upload", id: "upload", label: "Upload" },
+  { href: "/admin/requests", id: "requests", label: "Requests" },
   { href: "/admin/artists", id: "artists", label: "Artists" },
   { href: "/admin/analytics", id: "analytics", label: "Analytics" },
 ] as const;
@@ -11,7 +12,7 @@ const links = [
 export function AdminNav({
   current,
 }: {
-  current: "tracks" | "upload" | "edit" | "analytics" | "artists";
+  current: "tracks" | "upload" | "edit" | "analytics" | "artists" | "requests";
 }) {
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">

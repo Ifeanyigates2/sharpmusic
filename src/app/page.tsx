@@ -119,6 +119,25 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <section className="border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-16 md:flex-row md:items-end md:justify-between md:px-6 md:py-20">
+          <div className="max-w-lg">
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-[color:var(--foam)] sm:text-3xl">
+              Can&apos;t find a track?
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-[color:var(--mist)] sm:text-base">
+              Search the catalog, then recommend songs you want us to add.
+            </p>
+          </div>
+          <Link
+            href="/request"
+            className="shrink-0 self-start rounded-sm bg-[color:var(--signal)] px-5 py-2.5 text-sm font-semibold text-[color:var(--ink)] transition hover:brightness-110 md:self-auto"
+          >
+            Find & request
+          </Link>
+        </div>
+      </section>
     </>
   );
 }

@@ -42,57 +42,49 @@ export default async function NewsPage() {
             <NewsPostCard key={post.id} post={post} />
           ))}
         </div>
-      ) : (
+      ) : linked.length > 0 ? (
         <div className="max-w-2xl space-y-6">
-          <p className="text-[color:var(--mist)]">
-            {linked.length === 0
-              ? "Artist social accounts are not linked yet. Once handles are added in admin and API keys are set, posts appear here automatically."
-              : "No posts synced yet. Connect social API keys (see .env.example), then run Sync from Admin → Artists — or refresh after keys are live."}
-          </p>
+          <div className="space-y-4">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[color:var(--foam)]">
+              Follow artists on the platform
+            </h2>
+            <ul className="space-y-4">
+              {linked.map((artist) => {
+                const platforms = (
+                  [
+                    ["instagram", artist.instagram],
+                    ["facebook", artist.facebook],
+                    ["threads", artist.threads],
+                    ["twitter", artist.twitter],
+                  ] as const
+                ).filter(([, h]) => h);
 
-          {linked.length > 0 ? (
-            <div className="space-y-4">
-              <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-[color:var(--foam)]">
-                Follow artists on the platform
-              </h2>
-              <ul className="space-y-4">
-                {linked.map((artist) => {
-                  const platforms = (
-                    [
-                      ["instagram", artist.instagram],
-                      ["facebook", artist.facebook],
-                      ["threads", artist.threads],
-                      ["twitter", artist.twitter],
-                    ] as const
-                  ).filter(([, h]) => h);
-
-                  return (
-                    <li key={artist.nameKey} className="border-t border-white/10 pt-4">
-                      <p className="font-semibold text-[color:var(--foam)]">
-                        {artist.name}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-3 text-sm">
-                        {platforms.map(([platform, handle]) => (
-                          <a
-                            key={platform}
-                            href={socialProfileUrl(
-                              platform as SocialPlatform,
-                              handle,
-                            )}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[color:var(--signal)] hover:underline"
-                          >
-                            {platform === "twitter" ? "X" : platform} →
-                          </a>
-                        ))}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
+                return (
+                  <li key={artist.nameKey} className="border-t border-white/10 pt-4">
+                    <p className="font-semibold text-[color:var(--foam)]">
+                      {artist.name}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                      {platforms.map(([platform, handle]) => (
+                        <a
+                          key={platform}
+                          href={socialProfileUrl(
+                            platform as SocialPlatform,
+                            handle,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[color:var(--signal)] hover:underline"
+                        >
+                          {platform === "twitter" ? "X" : platform} →
+                        </a>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           <Link
             href="/browse"
@@ -101,7 +93,7 @@ export default async function NewsPage() {
             Browse the catalog →
           </Link>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

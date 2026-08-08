@@ -16,6 +16,9 @@ export function Footer() {
           <Link href="/browse" className="hover:text-[color:var(--signal)]">
             Browse
           </Link>
+          <Link href="/request" className="hover:text-[color:var(--signal)]">
+            Request
+          </Link>
           <Link href="/news" className="hover:text-[color:var(--signal)]">
             News
           </Link>

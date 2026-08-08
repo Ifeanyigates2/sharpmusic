@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BrowseFilters } from "@/components/BrowseFilters";
 import { TrackCard } from "@/components/TrackCard";
 import { getAllTracks, searchTracks } from "@/lib/store";
@@ -50,9 +51,22 @@ export default async function BrowsePage({ searchParams }: Props) {
       </p>
 
       {tracks.length === 0 ? (
-        <p className="mt-10 text-[color:var(--mist)]">
-          No tracks match those filters. Try clearing search or picking another region.
-        </p>
+        <div className="mt-10 space-y-3 text-[color:var(--mist)]">
+          <p>
+            No tracks match those filters. Try clearing search or picking another
+            region.
+          </p>
+          <p>
+            Looking for something we don&apos;t have?{" "}
+            <Link
+              href="/request"
+              className="font-semibold text-[color:var(--signal)] hover:underline"
+            >
+              Recommend a song
+            </Link>
+            .
+          </p>
+        </div>
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {tracks.map((track) => (
