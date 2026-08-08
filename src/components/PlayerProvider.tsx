@@ -12,6 +12,8 @@ import {
 import { trackStreamUrl } from "@/lib/stream";
 import type { Track } from "@/lib/types";
 
+export type RepeatMode = "off" | "one" | "all";
+
 type UpNext = {
   track: Track;
   reason: string;
@@ -28,13 +30,20 @@ type PlayerContextValue = {
   nextSource: "gemini" | "fallback" | "user" | null;
   resolvingNext: boolean;
   upNext: UpNext | null;
+  shuffle: boolean;
+  repeatMode: RepeatMode;
+  sleepEndsAt: number | null;
   playTrack: (track: Track, queue?: Track[]) => void;
   playAsNext: (track: Track) => void;
   playNext: () => void;
   playPrevious: () => void;
   removeFromQueue: (trackId: string) => void;
+  reorderQueue: (orderedUpcomingIds: string[]) => void;
   toggle: () => void;
   seek: (ratio: number) => void;
+  toggleShuffle: () => void;
+  cycleRepeat: () => void;
+  setSleepMinutes: (minutes: number | null) => void;
   hasNext: boolean;
   hasPrevious: boolean;
 };
@@ -64,9 +73,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const queueRef = useRef<Track[]>([]);
   const currentRef = useRef<Track | null>(null);
   const historyRef = useRef<string[]>([]);
-  const loadTrackRef = useRef<(track: Track, meta?: { reason?: string; source?: "gemini" | "fallback" }) => void>(
-    () => {},
-  );
+  const loadTrackRef = useRef<
+    (
+      track: Track,
+      meta?: { reason?: string; source?: "gemini" | "fallback" | "user" },
+    ) => void
+  >(() => {});
   const resolveNextRef = useRef<() => Promise<void>>(async () => {});
   const prefetchRef = useRef<{
     fromId: string;
@@ -76,6 +88,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   } | null>(null);
   const prefetchAbortRef = useRef<AbortController | null>(null);
   const userNextPinnedRef = useRef(false);
+  const shuffleRef = useRef(false);
+  const repeatModeRef = useRef<RepeatMode>("off");
+  const sleepTimerRef = useRef<number | null>(null);
 
   const [current, setCurrent] = useState<Track | null>(null);
   const [queue, setQueue] = useState<Track[]>([]);
@@ -88,6 +103,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   >(null);
   const [resolvingNext, setResolvingNext] = useState(false);
   const [upNext, setUpNext] = useState<UpNext | null>(null);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
+  const [sleepEndsAt, setSleepEndsAt] = useState<number | null>(null);
   const durationRef = useRef(0);
 
   const rememberPlayed = useCallback((trackId: string) => {
@@ -106,6 +124,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
+  const shuffleFallback = useCallback((cur: Track): Track | null => {
+    const candidates = queueRef.current.filter((t) => t.id !== cur.id);
+    if (candidates.length === 0) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }, []);
+
   const fetchAiNext = useCallback(
     async (cur: Track, signal?: AbortSignal) => {
       const candidateIds = queueRef.current.map((t) => t.id);
@@ -115,8 +139,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           currentId: cur.id,
           recentIds: historyRef.current,
-          candidateIds:
-            candidateIds.length > 1 ? candidateIds : undefined,
+          candidateIds: candidateIds.length > 1 ? candidateIds : undefined,
         }),
         signal,
       });
@@ -136,6 +159,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const prefetchNext = useCallback(
     (from: Track) => {
       if (userNextPinnedRef.current) return;
+      if (shuffleRef.current) {
+        const pick = shuffleFallback(from);
+        if (pick) {
+          const next: UpNext = {
+            track: pick,
+            reason: "Shuffle",
+            source: "fallback",
+          };
+          prefetchRef.current = { fromId: from.id, ...next };
+          setUpNext(next);
+        } else {
+          prefetchRef.current = null;
+          setUpNext(null);
+        }
+        return;
+      }
 
       prefetchAbortRef.current?.abort();
       const controller = new AbortController();
@@ -148,6 +187,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           const pick = await fetchAiNext(from, controller.signal);
           if (controller.signal.aborted) return;
           if (userNextPinnedRef.current) return;
+          if (shuffleRef.current) return;
           if (currentRef.current?.id !== from.id) return;
           const next: UpNext = {
             track: pick.track,
@@ -160,11 +200,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           };
           setUpNext(next);
         } catch {
-          // Prefetch is best-effort; ended/skip will resolve live
+          // Prefetch is best-effort
         }
       })();
     },
-    [fetchAiNext],
+    [fetchAiNext, shuffleFallback],
   );
 
   const loadTrack = useCallback(
@@ -194,7 +234,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       void audio.play().catch(() => {
         setPlaying(false);
       });
-      // Durable recently-played history (cookie) — best-effort
       void fetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,10 +251,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (repeatModeRef.current === "one") {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.currentTime = 0;
+        void audio.play().catch(() => setPlaying(false));
+      }
+      return;
+    }
+
     const pref = prefetchRef.current;
     if (pref && pref.fromId === cur.id) {
       loadTrack(pref.track, { reason: pref.reason, source: pref.source });
       return;
+    }
+
+    if (shuffleRef.current) {
+      const pick = shuffleFallback(cur);
+      if (pick) {
+        loadTrack(pick, { reason: "Shuffle", source: "fallback" });
+        return;
+      }
     }
 
     setResolvingNext(true);
@@ -229,13 +285,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           reason: "Next in catalog",
           source: "fallback",
         });
+      } else if (repeatModeRef.current === "all" && queueRef.current[0]) {
+        loadTrack(queueRef.current[0], {
+          reason: "Repeat queue",
+          source: "fallback",
+        });
       } else {
         setPlaying(false);
       }
     } finally {
       setResolvingNext(false);
     }
-  }, [fetchAiNext, loadTrack, sequentialFallback]);
+  }, [fetchAiNext, loadTrack, sequentialFallback, shuffleFallback]);
 
   useEffect(() => {
     loadTrackRef.current = loadTrack;
@@ -280,6 +341,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     return () => {
       prefetchAbortRef.current?.abort();
+      if (sleepTimerRef.current) window.clearTimeout(sleepTimerRef.current);
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
@@ -315,7 +377,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [loadTrack],
   );
 
-  /** Queue a track to play right after the current one (does not interrupt playback). */
   const playAsNext = useCallback(
     (track: Track) => {
       const cur = currentRef.current;
@@ -369,12 +430,59 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [prefetchNext, upNext?.track.id],
   );
 
+  const reorderQueue = useCallback(
+    (orderedUpcomingIds: string[]) => {
+      const cur = currentRef.current;
+      if (!cur) return;
+
+      const byId = new Map(queueRef.current.map((t) => [t.id, t]));
+      const upcoming = orderedUpcomingIds
+        .map((id) => byId.get(id))
+        .filter((t): t is Track => t != null && t.id !== cur.id);
+
+      // Keep any queue tracks not listed (safety) after the ordered ones
+      const seen = new Set([cur.id, ...upcoming.map((t) => t.id)]);
+      const rest = queueRef.current.filter((t) => !seen.has(t.id));
+      const nextQueue = [cur, ...upcoming, ...rest];
+      queueRef.current = nextQueue;
+      setQueue(nextQueue);
+
+      // If user had pinned next and it's still first upcoming, keep pin
+      const first = upcoming[0];
+      if (
+        userNextPinnedRef.current &&
+        first &&
+        upNext?.track.id === first.id
+      ) {
+        prefetchRef.current = {
+          fromId: cur.id,
+          track: first,
+          reason: "Play next",
+          source: "user",
+        };
+        setUpNext({
+          track: first,
+          reason: "Play next",
+          source: "user",
+        });
+      } else if (!userNextPinnedRef.current && first && shuffleRef.current) {
+        const next: UpNext = {
+          track: first,
+          reason: "Shuffle",
+          source: "fallback",
+        };
+        prefetchRef.current = { fromId: cur.id, ...next };
+        setUpNext(next);
+      }
+    },
+    [upNext?.track.id],
+  );
+
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
     const cur = currentRef.current;
     if (!cur || !audio) return;
 
-    // Restart current track if we're more than a few seconds in
     if (audio.currentTime > 3) {
       audio.currentTime = 0;
       return;
@@ -409,8 +517,47 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.currentTime = next;
       setProgress(next);
     } catch {
-      // Some browsers throw if the media isn't seekable yet
+      // ignore
     }
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setShuffle((prev) => {
+      const next = !prev;
+      shuffleRef.current = next;
+      const cur = currentRef.current;
+      if (cur && !userNextPinnedRef.current) {
+        prefetchNext(cur);
+      }
+      return next;
+    });
+  }, [prefetchNext]);
+
+  const cycleRepeat = useCallback(() => {
+    setRepeatMode((prev) => {
+      const next: RepeatMode =
+        prev === "off" ? "all" : prev === "all" ? "one" : "off";
+      repeatModeRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const setSleepMinutes = useCallback((minutes: number | null) => {
+    if (sleepTimerRef.current) {
+      window.clearTimeout(sleepTimerRef.current);
+      sleepTimerRef.current = null;
+    }
+    if (!minutes || minutes <= 0) {
+      setSleepEndsAt(null);
+      return;
+    }
+    const endsAt = Date.now() + minutes * 60_000;
+    setSleepEndsAt(endsAt);
+    sleepTimerRef.current = window.setTimeout(() => {
+      audioRef.current?.pause();
+      setSleepEndsAt(null);
+      sleepTimerRef.current = null;
+    }, minutes * 60_000);
   }, []);
 
   const currentId = current?.id;
@@ -434,13 +581,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         nextSource,
         resolvingNext,
         upNext,
+        shuffle,
+        repeatMode,
+        sleepEndsAt,
         playTrack,
         playAsNext,
         playNext,
         playPrevious,
         removeFromQueue,
+        reorderQueue,
         toggle,
         seek,
+        toggleShuffle,
+        cycleRepeat,
+        setSleepMinutes,
         hasNext,
         hasPrevious,
       }}

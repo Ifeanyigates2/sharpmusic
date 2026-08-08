@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ListMusic, Loader2, X } from "lucide-react";
+import { useState } from "react";
+import { GripVertical, ListMusic, Loader2, X } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
 import type { Track } from "@/lib/types";
@@ -21,15 +22,38 @@ export function QueuePanel({
     nextSource,
     playTrack,
     removeFromQueue,
+    reorderQueue,
   } = usePlayer();
+  const [dragId, setDragId] = useState<string | null>(null);
 
   if (!open || !current) return null;
 
   const upcoming = queue.filter(
-    (t) =>
-      t.id !== current.id &&
-      t.id !== upNext?.track.id,
+    (t) => t.id !== current.id && t.id !== upNext?.track.id,
   );
+
+  function onDropOn(targetId: string) {
+    if (!dragId || dragId === targetId) {
+      setDragId(null);
+      return;
+    }
+    const ids = upcoming.map((t) => t.id);
+    const from = ids.indexOf(dragId);
+    const to = ids.indexOf(targetId);
+    if (from < 0 || to < 0) {
+      setDragId(null);
+      return;
+    }
+    const next = [...ids];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    const withUpNext =
+      upNext && upNext.track.id !== current?.id
+        ? [upNext.track.id, ...next.filter((id) => id !== upNext.track.id)]
+        : next;
+    reorderQueue(withUpNext);
+    setDragId(null);
+  }
 
   return (
     <div className="absolute bottom-full left-0 right-0 z-50 mb-2 px-4 md:px-6">
@@ -79,10 +103,21 @@ export function QueuePanel({
             />
           ) : null}
 
+          {upcoming.length > 0 ? (
+            <p className="border-t border-white/10 px-4 py-2 text-[10px] uppercase tracking-wider text-[color:var(--mist)]">
+              Drag to reorder
+            </p>
+          ) : null}
+
           {upcoming.map((track) => (
             <QueueRow
               key={track.id}
               track={track}
+              draggable
+              dragging={dragId === track.id}
+              onDragStart={() => setDragId(track.id)}
+              onDragEnd={() => setDragId(null)}
+              onDrop={() => onDropOn(track.id)}
               onPlay={() => playTrack(track, queue)}
               onRemove={() => removeFromQueue(track.id)}
             />
@@ -91,7 +126,7 @@ export function QueuePanel({
           {!upNext && !resolvingNext && upcoming.length === 0 ? (
             <p className="border-t border-white/10 px-4 py-4 text-xs text-[color:var(--mist)]">
               {nextSource
-                ? "Queue will fill as Gemini picks the next track."
+                ? "Queue will fill as the next track is picked."
                 : "Play more tracks from Browse to build a queue."}
             </p>
           ) : null}
@@ -105,21 +140,55 @@ function QueueRow({
   track,
   label,
   active,
+  draggable,
+  dragging,
   onPlay,
   onRemove,
+  onDragStart,
+  onDragEnd,
+  onDrop,
 }: {
   track: Track;
   label?: string;
   active?: boolean;
+  draggable?: boolean;
+  dragging?: boolean;
   onPlay: () => void;
   onRemove?: () => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onDrop?: () => void;
 }) {
   return (
     <div
-      className={`flex items-center gap-3 border-t border-white/10 px-4 py-2.5 ${
+      className={`flex items-center gap-2 border-t border-white/10 px-3 py-2.5 sm:gap-3 sm:px-4 ${
         active ? "bg-white/[0.04]" : ""
-      }`}
+      } ${dragging ? "opacity-50" : ""}`}
+      draggable={Boolean(draggable)}
+      onDragStart={(e) => {
+        if (!draggable) return;
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart?.();
+      }}
+      onDragOver={(e) => {
+        if (!draggable) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(e) => {
+        if (!draggable) return;
+        e.preventDefault();
+        onDrop?.();
+      }}
+      onDragEnd={() => onDragEnd?.()}
     >
+      {draggable ? (
+        <span className="cursor-grab text-[color:var(--mist)] active:cursor-grabbing">
+          <GripVertical size={14} />
+        </span>
+      ) : (
+        <span className="w-3.5" />
+      )}
       <button
         type="button"
         onClick={onPlay}

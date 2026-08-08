@@ -5,8 +5,12 @@ import { useEffect, useState } from "react";
 import {
   ListMusic,
   Loader2,
+  Moon,
   Pause,
   Play,
+  Repeat,
+  Repeat1,
+  Shuffle,
   SkipBack,
   SkipForward,
 } from "lucide-react";
@@ -14,6 +18,8 @@ import { CoverArt } from "@/components/CoverArt";
 import { QueuePanel } from "@/components/QueuePanel";
 import { usePlayer } from "@/components/PlayerProvider";
 import { artistPath, formatDuration } from "@/lib/format";
+
+const SLEEP_OPTIONS = [15, 30, 45, 60] as const;
 
 export function AudioPlayer() {
   const {
@@ -25,10 +31,16 @@ export function AudioPlayer() {
     nextSource,
     resolvingNext,
     upNext,
+    shuffle,
+    repeatMode,
+    sleepEndsAt,
     toggle,
     seek,
     playNext,
     playPrevious,
+    toggleShuffle,
+    cycleRepeat,
+    setSleepMinutes,
     hasNext,
     hasPrevious,
   } = usePlayer();
@@ -38,6 +50,8 @@ export function AudioPlayer() {
   const [scrubbing, setScrubbing] = useState(false);
   const [scrubRatio, setScrubRatio] = useState(0);
   const [queueOpen, setQueueOpen] = useState(false);
+  const [sleepOpen, setSleepOpen] = useState(false);
+  const [sleepLeft, setSleepLeft] = useState<string | null>(null);
 
   useEffect(() => {
     if (!scrubbing) setScrubRatio(liveRatio);
@@ -45,7 +59,28 @@ export function AudioPlayer() {
 
   useEffect(() => {
     setQueueOpen(false);
+    setSleepOpen(false);
   }, [current?.id]);
+
+  useEffect(() => {
+    if (!sleepEndsAt) {
+      setSleepLeft(null);
+      return;
+    }
+    const tick = () => {
+      const ms = sleepEndsAt - Date.now();
+      if (ms <= 0) {
+        setSleepLeft(null);
+        return;
+      }
+      const m = Math.floor(ms / 60_000);
+      const s = Math.floor((ms % 60_000) / 1000);
+      setSleepLeft(`${m}:${s.toString().padStart(2, "0")}`);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [sleepEndsAt]);
 
   if (!current) return null;
 
@@ -85,6 +120,7 @@ export function AudioPlayer() {
               </Link>
               {" · "}
               {current.country}
+              {sleepLeft ? ` · Sleep ${sleepLeft}` : ""}
             </p>
             {resolvingNext ? (
               <p className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] text-[color:var(--signal)]/90">
@@ -98,7 +134,9 @@ export function AudioPlayer() {
                   ? " · Gemini"
                   : upNext.source === "user"
                     ? " · You"
-                    : ""}
+                    : shuffle
+                      ? " · Shuffle"
+                      : ""}
               </p>
             ) : nextReason ? (
               <p className="mt-0.5 truncate text-[10px] text-[color:var(--signal)]/80">
@@ -180,54 +218,131 @@ export function AudioPlayer() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => setQueueOpen((v) => !v)}
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10 ${
-                queueOpen
-                  ? "text-[color:var(--signal)]"
-                  : "text-[color:var(--foam)]"
-              }`}
-              aria-label="Open queue"
-              aria-expanded={queueOpen}
-            >
-              <ListMusic size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={playPrevious}
-              disabled={!hasPrevious}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
-              aria-label="Previous track"
-            >
-              <SkipBack size={16} fill="currentColor" />
-            </button>
-            <button
-              type="button"
-              onClick={toggle}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--signal)] text-[color:var(--ink)] transition hover:scale-105"
-              aria-label={playing ? "Pause" : "Play"}
-            >
-              {playing ? (
-                <Pause size={18} fill="currentColor" />
-              ) : (
-                <Play size={18} fill="currentColor" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={playNext}
-              disabled={!hasNext || resolvingNext}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
-              aria-label="Next track"
-            >
-              {resolvingNext ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <SkipForward size={16} fill="currentColor" />
-              )}
-            </button>
+
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              <button
+                type="button"
+                onClick={toggleShuffle}
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-white/10 ${
+                  shuffle
+                    ? "text-[color:var(--signal)]"
+                    : "text-[color:var(--mist)]"
+                }`}
+                aria-label="Shuffle"
+                aria-pressed={shuffle}
+              >
+                <Shuffle size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={cycleRepeat}
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-white/10 ${
+                  repeatMode !== "off"
+                    ? "text-[color:var(--signal)]"
+                    : "text-[color:var(--mist)]"
+                }`}
+                aria-label={`Repeat ${repeatMode}`}
+              >
+                {repeatMode === "one" ? (
+                  <Repeat1 size={14} />
+                ) : (
+                  <Repeat size={14} />
+                )}
+              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSleepOpen((v) => !v)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-white/10 ${
+                    sleepEndsAt
+                      ? "text-[color:var(--signal)]"
+                      : "text-[color:var(--mist)]"
+                  }`}
+                  aria-label="Sleep timer"
+                  aria-expanded={sleepOpen}
+                >
+                  <Moon size={14} />
+                </button>
+                {sleepOpen ? (
+                  <div className="absolute bottom-full right-0 mb-2 w-36 overflow-hidden rounded-md border border-white/10 bg-[color:var(--ink)] shadow-xl">
+                    {SLEEP_OPTIONS.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setSleepMinutes(m);
+                          setSleepOpen(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-xs font-semibold text-[color:var(--foam)] hover:bg-white/[0.06]"
+                      >
+                        {m} minutes
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSleepMinutes(null);
+                        setSleepOpen(false);
+                      }}
+                      className="block w-full border-t border-white/10 px-3 py-2 text-left text-xs font-semibold text-[color:var(--mist)] hover:bg-white/[0.06]"
+                    >
+                      Turn off
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => setQueueOpen((v) => !v)}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10 ${
+                  queueOpen
+                    ? "text-[color:var(--signal)]"
+                    : "text-[color:var(--foam)]"
+                }`}
+                aria-label="Open queue"
+                aria-expanded={queueOpen}
+              >
+                <ListMusic size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={playPrevious}
+                disabled={!hasPrevious}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
+                aria-label="Previous track"
+              >
+                <SkipBack size={16} fill="currentColor" />
+              </button>
+              <button
+                type="button"
+                onClick={toggle}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-[color:var(--signal)] text-[color:var(--ink)] transition hover:scale-105"
+                aria-label={playing ? "Pause" : "Play"}
+              >
+                {playing ? (
+                  <Pause size={18} fill="currentColor" />
+                ) : (
+                  <Play size={18} fill="currentColor" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={playNext}
+                disabled={!hasNext || resolvingNext}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
+                aria-label="Next track"
+              >
+                {resolvingNext ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <SkipForward size={16} fill="currentColor" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

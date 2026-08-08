@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminLogoutButton } from "@/components/AdminLogoutButton";
 
 const links = [
+  { href: "/admin/dashboard", id: "home", label: "Home" },
   { href: "/admin/tracks", id: "tracks", label: "Manage tracks" },
   { href: "/upload", id: "upload", label: "Upload" },
   { href: "/admin/requests", id: "requests", label: "Requests" },
@@ -12,7 +13,14 @@ const links = [
 export function AdminNav({
   current,
 }: {
-  current: "tracks" | "upload" | "edit" | "analytics" | "artists" | "requests";
+  current:
+    | "home"
+    | "tracks"
+    | "upload"
+    | "edit"
+    | "analytics"
+    | "artists"
+    | "requests";
 }) {
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">

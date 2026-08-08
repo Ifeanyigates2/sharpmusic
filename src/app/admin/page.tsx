@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   if (await isAdminAuthenticated()) {
-    redirect("/admin/tracks");
+    redirect("/admin/dashboard");
   }
 
   return (
