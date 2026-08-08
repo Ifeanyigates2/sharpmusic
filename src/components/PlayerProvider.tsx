@@ -20,6 +20,7 @@ type PlayerContextValue = {
   duration: number;
   nextReason: string | null;
   nextSource: "gemini" | "fallback" | null;
+  resolvingNext: boolean;
   playTrack: (track: Track, queue?: Track[]) => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -75,6 +76,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [nextSource, setNextSource] = useState<"gemini" | "fallback" | null>(
     null,
   );
+  const [resolvingNext, setResolvingNext] = useState(false);
   const durationRef = useRef(0);
 
   const rememberPlayed = useCallback((trackId: string) => {
@@ -189,6 +191,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setResolvingNext(true);
     try {
       const pick = await fetchAiNext(cur);
       loadTrack(pick.track, { reason: pick.reason, source: pick.source });
@@ -202,6 +205,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       } else {
         setPlaying(false);
       }
+    } finally {
+      setResolvingNext(false);
     }
   }, [fetchAiNext, loadTrack, sequentialFallback]);
 
@@ -350,6 +355,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         duration,
         nextReason,
         nextSource,
+        resolvingNext,
         playTrack,
         playNext,
         playPrevious,

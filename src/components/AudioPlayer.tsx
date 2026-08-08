@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { Loader2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
-import { formatDuration } from "@/lib/format";
+import { artistPath, formatDuration } from "@/lib/format";
 
 export function AudioPlayer() {
   const {
@@ -15,6 +15,7 @@ export function AudioPlayer() {
     duration,
     nextReason,
     nextSource,
+    resolvingNext,
     toggle,
     seek,
     playNext,
@@ -59,13 +60,25 @@ export function AudioPlayer() {
             {current.title}
           </Link>
           <p className="truncate text-xs text-[color:var(--mist)]">
-            {current.artist} · {current.country}
+            <Link
+              href={artistPath(current.artist)}
+              className="hover:text-[color:var(--signal)]"
+            >
+              {current.artist}
+            </Link>
+            {" · "}
+            {current.country}
           </p>
-          {nextReason && (
+          {resolvingNext ? (
+            <p className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] text-[color:var(--signal)]/90">
+              <Loader2 size={10} className="shrink-0 animate-spin" />
+              Picking next song…
+            </p>
+          ) : nextReason ? (
             <p className="mt-0.5 truncate text-[10px] text-[color:var(--signal)]/80">
               {nextSource === "gemini" ? "Gemini" : "Auto"} · {nextReason}
             </p>
-          )}
+          ) : null}
 
           <div className="mt-2 flex items-center gap-2">
             <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-[color:var(--mist)] sm:w-10 sm:text-xs">
@@ -161,11 +174,15 @@ export function AudioPlayer() {
           <button
             type="button"
             onClick={playNext}
-            disabled={!hasNext}
+            disabled={!hasNext || resolvingNext}
             className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--foam)] transition hover:bg-white/10 disabled:opacity-30"
             aria-label="Next track"
           >
-            <SkipForward size={16} fill="currentColor" />
+            {resolvingNext ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <SkipForward size={16} fill="currentColor" />
+            )}
           </button>
         </div>
       </div>

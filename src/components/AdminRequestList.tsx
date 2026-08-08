@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Upload } from "lucide-react";
 import type { SongRequest, SongRequestStatus } from "@/lib/request-types";
 import { SONG_REQUEST_STATUSES } from "@/lib/request-types";
 
@@ -143,6 +144,18 @@ export function AdminRequestList({ requests }: { requests: SongRequest[] }) {
                     </option>
                   ))}
                 </select>
+                <Link
+                  href={`/upload?${new URLSearchParams({
+                    title: req.title,
+                    artist: req.artist,
+                    ...(req.genre ? { genre: req.genre } : {}),
+                    ...(req.notes ? { notes: req.notes } : {}),
+                  }).toString()}`}
+                  className="inline-flex items-center gap-2 rounded-sm border border-[color:var(--signal)]/40 px-3 py-2 text-xs font-semibold text-[color:var(--signal)] transition hover:bg-[color:var(--signal)]/10"
+                >
+                  <Upload size={14} />
+                  Upload
+                </Link>
                 <button
                   type="button"
                   disabled={busyId === req.id}

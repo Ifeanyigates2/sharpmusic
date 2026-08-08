@@ -1,9 +1,11 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CoverArt } from "@/components/CoverArt";
 import { DownloadButton } from "@/components/DownloadButton";
 import { PlayButton } from "@/components/PlayButton";
 import {
+  artistPath,
   formatDownloads,
   formatDuration,
   formatPrice,
@@ -54,7 +56,14 @@ export default async function TrackPage({ params }: Props) {
           <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-[color:var(--foam)] sm:text-5xl">
             {track.title}
           </h1>
-          <p className="mt-2 text-xl text-[color:var(--mist)]">{track.artist}</p>
+          <p className="mt-2 text-xl text-[color:var(--mist)]">
+            <Link
+              href={artistPath(track.artist)}
+              className="hover:text-[color:var(--signal)]"
+            >
+              {track.artist}
+            </Link>
+          </p>
           <p className="mt-6 max-w-xl text-[color:var(--mist)] leading-relaxed">
             {track.description}
           </p>

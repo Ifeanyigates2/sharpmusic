@@ -12,10 +12,38 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function UploadPage() {
+type Props = {
+  searchParams: Promise<{
+    title?: string;
+    artist?: string;
+    genre?: string;
+    notes?: string;
+  }>;
+};
+
+export default async function UploadPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const nextPath = (() => {
+    const q = new URLSearchParams();
+    if (params.title) q.set("title", params.title);
+    if (params.artist) q.set("artist", params.artist);
+    if (params.genre) q.set("genre", params.genre);
+    if (params.notes) q.set("notes", params.notes);
+    const qs = q.toString();
+    return qs ? `/upload?${qs}` : "/upload";
+  })();
+
   if (!(await isAdminAuthenticated())) {
-    redirect("/admin?next=/upload");
+    redirect(`/admin?next=${encodeURIComponent(nextPath)}`);
   }
+
+  const defaults = {
+    title: params.title?.trim() || "",
+    artist: params.artist?.trim() || "",
+    genre: params.genre?.trim() || "",
+    notes: params.notes?.trim() || "",
+  };
+  const fromRequest = Boolean(defaults.title || defaults.artist);
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-28 md:px-6">
@@ -25,12 +53,13 @@ export default async function UploadPage() {
           Upload music
         </h1>
         <p className="mt-3 text-[color:var(--mist)]">
-          Admin only. Audio and covers go to Cloudinary; details are saved in
-          MongoDB.
+          {fromRequest
+            ? "Prefilling from a listener recommendation — add the audio file and publish."
+            : "Admin only. Audio and covers go to Cloudinary; details are saved in MongoDB."}
         </p>
       </div>
       <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5 md:p-8">
-        <UploadForm />
+        <UploadForm defaults={defaults} />
       </div>
     </div>
   );

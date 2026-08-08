@@ -49,12 +49,28 @@ async function uploadToCloudinary(file: File, signData: SignResponse) {
   };
 }
 
-export function UploadForm() {
+export function UploadForm({
+  defaults,
+}: {
+  defaults?: {
+    title?: string;
+    artist?: string;
+    genre?: string;
+    notes?: string;
+  };
+}) {
   const router = useRouter();
   const [pricing, setPricing] = useState<"free" | "paid">("free");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const defaultGenre =
+    defaults?.genre &&
+    GENRES.includes(defaults.genre as (typeof GENRES)[number])
+      ? defaults.genre
+      : GENRES[0];
+  const defaultDescription = defaults?.notes?.trim() || "";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -159,11 +175,28 @@ export function UploadForm() {
       </label>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Title" name="title" required placeholder="Track title" />
-        <Field label="Artist" name="artist" required placeholder="Artist name" />
+        <Field
+          label="Title"
+          name="title"
+          required
+          placeholder="Track title"
+          defaultValue={defaults?.title || ""}
+        />
+        <Field
+          label="Artist"
+          name="artist"
+          required
+          placeholder="Artist name"
+          defaultValue={defaults?.artist || ""}
+        />
         <label className="block space-y-2">
           <span className="text-sm text-[color:var(--mist)]">Genre</span>
-          <select name="genre" required defaultValue={GENRES[0]} className="field">
+          <select
+            name="genre"
+            required
+            defaultValue={defaultGenre}
+            className="field"
+          >
             {GENRES.map((g) => (
               <option key={g} value={g}>
                 {g}
@@ -217,6 +250,7 @@ export function UploadForm() {
         <textarea
           name="description"
           rows={3}
+          defaultValue={defaultDescription}
           placeholder="Tell listeners what this track is about"
           className="field resize-y"
         />

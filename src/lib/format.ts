@@ -22,3 +22,19 @@ export function coverGradient(hue: number): string {
   const h2 = (hue + 42) % 360;
   return `linear-gradient(145deg, hsl(${hue} 55% 28%) 0%, hsl(${h2} 48% 14%) 55%, hsl(${hue} 30% 8%) 100%)`;
 }
+
+/** URL slug for artist pages, e.g. "Ada Okoro" → "ada-okoro" */
+export function artistSlug(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 80);
+  return slug || "artist";
+}
+
+export function artistPath(name: string): string {
+  return `/artist/${artistSlug(name)}`;
+}
+

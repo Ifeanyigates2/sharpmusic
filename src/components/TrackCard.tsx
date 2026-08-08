@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Download, Pause, Play } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
-import { formatDuration, formatPrice } from "@/lib/format";
+import { formatDuration, formatPrice, artistPath } from "@/lib/format";
 import type { Track } from "@/lib/types";
 
 export function TrackCard({
@@ -54,9 +54,12 @@ export function TrackCard({
             >
               {track.title}
             </Link>
-            <p className="truncate text-xs text-[color:var(--mist)]">
+            <Link
+              href={artistPath(track.artist)}
+              className="block truncate text-xs text-[color:var(--mist)] hover:text-[color:var(--signal)]"
+            >
               {track.artist}
-            </p>
+            </Link>
           </div>
           <Link
             href={`/track/${track.id}`}
