@@ -49,6 +49,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const durationRef = useRef(0);
 
   const loadTrack = useCallback((track: Track) => {
     const audio = audioRef.current;
@@ -57,7 +58,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setCurrent(track);
     currentRef.current = track;
     setProgress(0);
-    setDuration(track.durationSec || 0);
+    const fallbackDur = track.durationSec || 0;
+    durationRef.current = fallbackDur;
+    setDuration(fallbackDur);
     audio.src = trackStreamUrl(track.id);
     void audio.play().catch(() => {
       setPlaying(false);
@@ -74,7 +77,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current = audio;
 
     const onTime = () => setProgress(audio.currentTime);
-    const onMeta = () => setDuration(audio.duration || 0);
+    const onMeta = () => {
+      const dur =
+        Number.isFinite(audio.duration) && audio.duration > 0
+          ? audio.duration
+          : durationRef.current;
+      durationRef.current = dur;
+      setDuration(dur);
+    };
+    const onDuration = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        durationRef.current = audio.duration;
+        setDuration(audio.duration);
+      }
+    };
     const onEnded = () => {
       const q = queueRef.current;
       const cur = currentRef.current;
@@ -99,6 +115,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("durationchange", onDuration);
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
@@ -107,6 +124,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("durationchange", onDuration);
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
@@ -175,8 +193,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const seek = useCallback((ratio: number) => {
     const audio = audioRef.current;
-    if (!audio || !Number.isFinite(audio.duration) || !audio.duration) return;
-    audio.currentTime = Math.min(Math.max(ratio, 0), 1) * audio.duration;
+    if (!audio) return;
+    const dur =
+      Number.isFinite(audio.duration) && audio.duration > 0
+        ? audio.duration
+        : durationRef.current;
+    if (!dur || !Number.isFinite(dur)) return;
+    const next = Math.min(Math.max(ratio, 0), 1) * dur;
+    try {
+      audio.currentTime = next;
+      setProgress(next);
+    } catch {
+      // Some browsers throw if the media isn't seekable yet
+    }
   }, []);
 
   const currentId = current?.id;
