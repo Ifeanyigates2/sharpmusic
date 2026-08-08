@@ -15,7 +15,7 @@ import type { Track } from "@/lib/types";
 type UpNext = {
   track: Track;
   reason: string;
-  source: "gemini" | "fallback";
+  source: "gemini" | "fallback" | "user";
 };
 
 type PlayerContextValue = {
@@ -25,10 +25,11 @@ type PlayerContextValue = {
   progress: number;
   duration: number;
   nextReason: string | null;
-  nextSource: "gemini" | "fallback" | null;
+  nextSource: "gemini" | "fallback" | "user" | null;
   resolvingNext: boolean;
   upNext: UpNext | null;
   playTrack: (track: Track, queue?: Track[]) => void;
+  playAsNext: (track: Track) => void;
   playNext: () => void;
   playPrevious: () => void;
   removeFromQueue: (trackId: string) => void;
@@ -71,9 +72,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     fromId: string;
     track: Track;
     reason: string;
-    source: "gemini" | "fallback";
+    source: "gemini" | "fallback" | "user";
   } | null>(null);
   const prefetchAbortRef = useRef<AbortController | null>(null);
+  const userNextPinnedRef = useRef(false);
 
   const [current, setCurrent] = useState<Track | null>(null);
   const [queue, setQueue] = useState<Track[]>([]);
@@ -81,9 +83,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [nextReason, setNextReason] = useState<string | null>(null);
-  const [nextSource, setNextSource] = useState<"gemini" | "fallback" | null>(
-    null,
-  );
+  const [nextSource, setNextSource] = useState<
+    "gemini" | "fallback" | "user" | null
+  >(null);
   const [resolvingNext, setResolvingNext] = useState(false);
   const [upNext, setUpNext] = useState<UpNext | null>(null);
   const durationRef = useRef(0);
@@ -133,6 +135,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const prefetchNext = useCallback(
     (from: Track) => {
+      if (userNextPinnedRef.current) return;
+
       prefetchAbortRef.current?.abort();
       const controller = new AbortController();
       prefetchAbortRef.current = controller;
@@ -143,6 +147,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         try {
           const pick = await fetchAiNext(from, controller.signal);
           if (controller.signal.aborted) return;
+          if (userNextPinnedRef.current) return;
           if (currentRef.current?.id !== from.id) return;
           const next: UpNext = {
             track: pick.track,
@@ -165,7 +170,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const loadTrack = useCallback(
     (
       track: Track,
-      meta?: { reason?: string; source?: "gemini" | "fallback" },
+      meta?: { reason?: string; source?: "gemini" | "fallback" | "user" },
     ) => {
       const audio = audioRef.current;
       if (!audio) return;
@@ -174,6 +179,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         rememberPlayed(currentRef.current.id);
       }
 
+      userNextPinnedRef.current = false;
       setCurrent(track);
       currentRef.current = track;
       setProgress(0);
@@ -188,6 +194,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       void audio.play().catch(() => {
         setPlaying(false);
       });
+      // Durable recently-played history (cookie) — best-effort
+      void fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackId: track.id }),
+      }).catch(() => {});
       prefetchNext(track);
     },
     [prefetchNext, rememberPlayed],
@@ -303,24 +315,59 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [loadTrack],
   );
 
+  /** Queue a track to play right after the current one (does not interrupt playback). */
+  const playAsNext = useCallback(
+    (track: Track) => {
+      const cur = currentRef.current;
+      if (!cur) {
+        playTrack(track);
+        return;
+      }
+      if (cur.id === track.id) return;
+
+      const without = queueRef.current.filter((t) => t.id !== track.id);
+      const curIdx = without.findIndex((t) => t.id === cur.id);
+      if (curIdx >= 0) without.splice(curIdx + 1, 0, track);
+      else without.push(cur, track);
+
+      queueRef.current = without;
+      setQueue(without);
+
+      prefetchAbortRef.current?.abort();
+      userNextPinnedRef.current = true;
+      const next: UpNext = {
+        track,
+        reason: "Play next",
+        source: "user",
+      };
+      prefetchRef.current = { fromId: cur.id, ...next };
+      setUpNext(next);
+    },
+    [playTrack],
+  );
+
   const playNext = useCallback(() => {
     void resolveAndPlayNext();
   }, [resolveAndPlayNext]);
 
-  const removeFromQueue = useCallback((trackId: string) => {
-    const cur = currentRef.current;
-    if (cur?.id === trackId) return;
+  const removeFromQueue = useCallback(
+    (trackId: string) => {
+      const cur = currentRef.current;
+      if (cur?.id === trackId) return;
 
-    const nextQueue = queueRef.current.filter((t) => t.id !== trackId);
-    queueRef.current = nextQueue;
-    setQueue(nextQueue);
+      const nextQueue = queueRef.current.filter((t) => t.id !== trackId);
+      queueRef.current = nextQueue;
+      setQueue(nextQueue);
 
-    if (upNext?.track.id === trackId) {
-      prefetchRef.current = null;
-      setUpNext(null);
-      if (cur) prefetchNext(cur);
-    }
-  }, [prefetchNext, upNext?.track.id]);
+      if (upNext?.track.id === trackId) {
+        userNextPinnedRef.current = false;
+        prefetchRef.current = null;
+        setUpNext(null);
+        if (cur) prefetchNext(cur);
+      }
+    },
+    [prefetchNext, upNext?.track.id],
+  );
 
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
@@ -388,6 +435,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         resolvingNext,
         upNext,
         playTrack,
+        playAsNext,
         playNext,
         playPrevious,
         removeFromQueue,

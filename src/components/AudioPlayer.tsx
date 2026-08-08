@@ -94,11 +94,20 @@ export function AudioPlayer() {
             ) : upNext ? (
               <p className="mt-0.5 truncate text-[10px] text-[color:var(--signal)]/80">
                 Next · {upNext.track.title}
-                {upNext.source === "gemini" ? " · Gemini" : ""}
+                {upNext.source === "gemini"
+                  ? " · Gemini"
+                  : upNext.source === "user"
+                    ? " · You"
+                    : ""}
               </p>
             ) : nextReason ? (
               <p className="mt-0.5 truncate text-[10px] text-[color:var(--signal)]/80">
-                {nextSource === "gemini" ? "Gemini" : "Auto"} · {nextReason}
+                {nextSource === "gemini"
+                  ? "Gemini"
+                  : nextSource === "user"
+                    ? "You"
+                    : "Auto"}{" "}
+                · {nextReason}
               </p>
             ) : null}
 

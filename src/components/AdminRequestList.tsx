@@ -148,6 +148,7 @@ export function AdminRequestList({ requests }: { requests: SongRequest[] }) {
                   href={`/upload?${new URLSearchParams({
                     title: req.title,
                     artist: req.artist,
+                    requestId: req.id,
                     ...(req.genre ? { genre: req.genre } : {}),
                     ...(req.notes ? { notes: req.notes } : {}),
                   }).toString()}`}

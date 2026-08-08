@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AddToPlaylistButton } from "@/components/AddToPlaylistButton";
 import { CoverArt } from "@/components/CoverArt";
 import { DownloadButton } from "@/components/DownloadButton";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -111,6 +112,7 @@ export default async function TrackPage({ params }: Props) {
               trackId={track.id}
               initiallyFavorited={favorited}
             />
+            <AddToPlaylistButton trackId={track.id} />
             <ShareButton
               title={`${track.title} — ${track.artist}`}
               text={track.description}

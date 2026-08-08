@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Download, Pause, Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  Download,
+  ListEnd,
+  MoreVertical,
+  Pause,
+  Play,
+} from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { usePlayer } from "@/components/PlayerProvider";
@@ -20,8 +28,37 @@ export function TrackCard({
   favorited?: boolean;
   showFavorite?: boolean;
 }) {
-  const { current, playing, playTrack } = usePlayer();
+  const { current, playing, playTrack, playAsNext, upNext } = usePlayer();
   const active = current?.id === track.id && playing;
+  const isUpNext = upNext?.track.id === track.id && upNext.source === "user";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [queuedFlash, setQueuedFlash] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  function queueAsNext(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    playAsNext(track);
+    setMenuOpen(false);
+    setQueuedFlash(true);
+    window.setTimeout(() => setQueuedFlash(false), 1400);
+  }
 
   return (
     <article className="track-card group relative">
@@ -48,6 +85,11 @@ export function TrackCard({
         <span className="absolute left-2 top-2 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--foam)]">
           {track.pricing === "free" ? "Free" : formatPrice(track.priceCents)}
         </span>
+        {isUpNext || queuedFlash ? (
+          <span className="absolute bottom-2 left-2 rounded-sm bg-[color:var(--signal)]/90 px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--ink)]">
+            Up next
+          </span>
+        ) : null}
       </button>
 
       {showFavorite ? (
@@ -61,8 +103,8 @@ export function TrackCard({
       ) : null}
 
       <div className="mt-2.5 space-y-0.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
+        <div className="flex items-start justify-between gap-1">
+          <div className="min-w-0 flex-1">
             <Link
               href={`/track/${track.id}`}
               className="block truncate font-[family-name:var(--font-display)] text-sm font-semibold tracking-wide text-[color:var(--foam)] hover:text-[color:var(--signal)]"
@@ -76,13 +118,59 @@ export function TrackCard({
               {track.artist}
             </Link>
           </div>
-          <Link
-            href={`/track/${track.id}`}
-            className="mt-0.5 shrink-0 text-[color:var(--mist)] transition hover:text-[color:var(--signal)]"
-            aria-label={`Open ${track.title}`}
-          >
-            <Download size={14} />
-          </Link>
+          <div className="relative shrink-0" ref={menuRef}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMenuOpen((v) => !v);
+              }}
+              className="rounded-sm p-1 text-[color:var(--mist)] transition hover:bg-white/10 hover:text-[color:var(--foam)]"
+              aria-label={`More options for ${track.title}`}
+              aria-expanded={menuOpen}
+            >
+              <MoreVertical size={14} />
+            </button>
+            {menuOpen ? (
+              <div className="absolute right-0 z-30 mt-1 w-40 overflow-hidden rounded-md border border-white/10 bg-[color:var(--ink)] shadow-xl">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    playTrack(track, queue);
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[color:var(--foam)] hover:bg-white/[0.06]"
+                >
+                  <Play size={12} />
+                  Play now
+                </button>
+                <button
+                  type="button"
+                  onClick={queueAsNext}
+                  disabled={current?.id === track.id}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[color:var(--foam)] hover:bg-white/[0.06] disabled:opacity-40"
+                >
+                  {queuedFlash || isUpNext ? (
+                    <Check size={12} className="text-[color:var(--signal)]" />
+                  ) : (
+                    <ListEnd size={12} />
+                  )}
+                  Play next
+                </button>
+                <Link
+                  href={`/track/${track.id}`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[color:var(--foam)] hover:bg-white/[0.06]"
+                >
+                  <Download size={12} />
+                  Open track
+                </Link>
+              </div>
+            ) : null}
+          </div>
         </div>
         <p className="text-[11px] text-[color:var(--mist)]/80">
           {track.genre}

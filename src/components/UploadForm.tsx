@@ -57,6 +57,7 @@ export function UploadForm({
     artist?: string;
     genre?: string;
     notes?: string;
+    requestId?: string;
   };
 }) {
   const router = useRouter();
@@ -71,6 +72,7 @@ export function UploadForm({
       ? defaults.genre
       : GENRES[0];
   const defaultDescription = defaults?.notes?.trim() || "";
+  const requestId = defaults?.requestId?.trim() || "";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -137,6 +139,18 @@ export function UploadForm({
       });
       const saveData = await saveRes.json();
       if (!saveRes.ok) throw new Error(saveData.error || "Save failed");
+
+      if (requestId && saveData.track?.id) {
+        setProgress("Updating song request…");
+        await fetch(`/api/requests/${requestId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "added",
+            trackId: saveData.track.id,
+          }),
+        }).catch(() => {});
+      }
 
       router.push(`/track/${saveData.track.id}`);
       router.refresh();

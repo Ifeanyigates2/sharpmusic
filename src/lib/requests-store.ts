@@ -112,6 +112,15 @@ export async function listSongRequests(
   return docs.map((doc) => toRequest(doc as Parameters<typeof toRequest>[0]));
 }
 
+export async function getSongRequestById(
+  id: string,
+): Promise<SongRequest | null> {
+  if (!isMongoConfigured()) return null;
+  await connectMongo();
+  const doc = await SongRequestModel.findOne({ id }).lean();
+  return doc ? toRequest(doc as Parameters<typeof toRequest>[0]) : null;
+}
+
 export async function updateSongRequestStatus(
   id: string,
   status: SongRequestStatus,

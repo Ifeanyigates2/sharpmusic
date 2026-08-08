@@ -9,7 +9,8 @@ import { BrandLogo } from "@/components/BrandLogo";
 const links = [
   { href: "/browse", label: "Browse" },
   { href: "/charts", label: "Charts" },
-  { href: "/favorites", label: "Favorites" },
+  { href: "/playlists", label: "Playlists" },
+  { href: "/history", label: "History" },
   { href: "/request", label: "Request" },
   { href: "/news", label: "News" },
 ];

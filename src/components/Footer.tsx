@@ -19,8 +19,11 @@ export function Footer() {
           <Link href="/charts" className="hover:text-[color:var(--signal)]">
             Charts
           </Link>
-          <Link href="/favorites" className="hover:text-[color:var(--signal)]">
-            Favorites
+          <Link href="/playlists" className="hover:text-[color:var(--signal)]">
+            Playlists
+          </Link>
+          <Link href="/history" className="hover:text-[color:var(--signal)]">
+            History
           </Link>
           <Link href="/request" className="hover:text-[color:var(--signal)]">
             Request

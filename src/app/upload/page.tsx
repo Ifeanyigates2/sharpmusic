@@ -18,6 +18,7 @@ type Props = {
     artist?: string;
     genre?: string;
     notes?: string;
+    requestId?: string;
   }>;
 };
 
@@ -29,6 +30,7 @@ export default async function UploadPage({ searchParams }: Props) {
     if (params.artist) q.set("artist", params.artist);
     if (params.genre) q.set("genre", params.genre);
     if (params.notes) q.set("notes", params.notes);
+    if (params.requestId) q.set("requestId", params.requestId);
     const qs = q.toString();
     return qs ? `/upload?${qs}` : "/upload";
   })();
@@ -42,8 +44,11 @@ export default async function UploadPage({ searchParams }: Props) {
     artist: params.artist?.trim() || "",
     genre: params.genre?.trim() || "",
     notes: params.notes?.trim() || "",
+    requestId: params.requestId?.trim() || "",
   };
-  const fromRequest = Boolean(defaults.title || defaults.artist);
+  const fromRequest = Boolean(
+    defaults.requestId || defaults.title || defaults.artist,
+  );
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-28 md:px-6">
@@ -54,7 +59,7 @@ export default async function UploadPage({ searchParams }: Props) {
         </h1>
         <p className="mt-3 text-[color:var(--mist)]">
           {fromRequest
-            ? "Prefilling from a listener recommendation — add the audio file and publish."
+            ? "Prefilling from a listener recommendation — add the audio file and publish. We’ll email them if they left an address."
             : "Admin only. Audio and covers go to Cloudinary; details are saved in MongoDB."}
         </p>
       </div>

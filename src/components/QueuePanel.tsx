@@ -68,9 +68,11 @@ export function QueuePanel({
             <QueueRow
               track={upNext.track}
               label={
-                upNext.source === "gemini"
-                  ? `Up next · Gemini · ${upNext.reason}`
-                  : `Up next · ${upNext.reason}`
+                upNext.source === "user"
+                  ? "Up next · You picked"
+                  : upNext.source === "gemini"
+                    ? `Up next · Gemini · ${upNext.reason}`
+                    : `Up next · ${upNext.reason}`
               }
               onPlay={() => playTrack(upNext.track, queue)}
               onRemove={() => removeFromQueue(upNext.track.id)}
