@@ -77,6 +77,7 @@ export function AdminTrackList({ tracks }: { tracks: AdminTrack[] }) {
                 </p>
                 <p className="mt-1 text-[10px] uppercase tracking-wider text-[color:var(--mist)]">
                   {track.source === "demo" ? "Demo catalog" : "Uploaded"}
+                  {track.videoUrl ? " · Music video" : ""}
                 </p>
               </div>
             </div>

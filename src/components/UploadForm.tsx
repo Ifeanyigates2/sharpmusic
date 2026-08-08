@@ -15,7 +15,7 @@ type SignResponse = {
   resourceType: string;
 };
 
-async function signUpload(kind: "audio" | "image") {
+async function signUpload(kind: "audio" | "image" | "music-video") {
   const signRes = await fetch("/api/upload/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -84,6 +84,7 @@ export function UploadForm({
     const fd = new FormData(form);
     const file = fd.get("audio");
     const cover = fd.get("cover");
+    const video = fd.get("video");
 
     if (!(file instanceof File) || file.size === 0) {
       setError("Audio file is required.");
@@ -100,6 +101,13 @@ export function UploadForm({
       setBusy(false);
       return;
     }
+    if (video instanceof File && video.size > 0) {
+      if (video.size > 200 * 1024 * 1024) {
+        setError("Music video must be under 200MB.");
+        setBusy(false);
+        return;
+      }
+    }
 
     try {
       setProgress("Uploading audio to Cloudinary…");
@@ -114,6 +122,16 @@ export function UploadForm({
         const imageData = await uploadToCloudinary(cover, imageSign);
         coverImageUrl = imageData.secure_url;
         coverPublicId = imageData.public_id;
+      }
+
+      let videoUrl = "";
+      let videoPublicId = "";
+      if (video instanceof File && video.size > 0) {
+        setProgress("Uploading music video…");
+        const videoSign = await signUpload("music-video");
+        const videoData = await uploadToCloudinary(video, videoSign);
+        videoUrl = videoData.secure_url;
+        videoPublicId = videoData.public_id;
       }
 
       setProgress("Saving track…");
@@ -135,6 +153,8 @@ export function UploadForm({
           publicId: audioData.public_id,
           coverImageUrl,
           coverPublicId,
+          videoUrl,
+          videoPublicId,
         }),
       });
       const saveData = await saveRes.json();
@@ -184,6 +204,18 @@ export function UploadForm({
           type="file"
           name="cover"
           accept="image/jpeg,image/png,image/webp,image/jpg"
+          className="block w-full rounded-sm border border-dashed border-white/20 bg-white/[0.03] px-4 py-6 text-sm text-[color:var(--foam)] file:mr-4 file:rounded-sm file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[color:var(--foam)]"
+        />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-[color:var(--mist)]">
+          Music video (optional — MP4, WebM, MOV up to 200MB)
+        </span>
+        <input
+          type="file"
+          name="video"
+          accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
           className="block w-full rounded-sm border border-dashed border-white/20 bg-white/[0.03] px-4 py-6 text-sm text-[color:var(--foam)] file:mr-4 file:rounded-sm file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[color:var(--foam)]"
         />
       </label>

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BrowseFilters } from "@/components/BrowseFilters";
+import { PlayAllButton } from "@/components/PlayAllButton";
 import { TrackCard } from "@/components/TrackCard";
 import { getFavoriteIds } from "@/lib/favorites";
 import { getAllTracks, searchTracks } from "@/lib/store";
@@ -48,9 +49,12 @@ export default async function BrowsePage({ searchParams }: Props) {
         <BrowseFilters />
       </Suspense>
 
-      <p className="mt-6 text-sm text-[color:var(--mist)]">
-        {tracks.length} track{tracks.length === 1 ? "" : "s"}
-      </p>
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        {tracks.length > 0 ? <PlayAllButton tracks={tracks} /> : null}
+        <p className="text-sm text-[color:var(--mist)]">
+          {tracks.length} track{tracks.length === 1 ? "" : "s"}
+        </p>
+      </div>
 
       {tracks.length === 0 ? (
         <div className="mt-10 space-y-3 text-[color:var(--mist)]">

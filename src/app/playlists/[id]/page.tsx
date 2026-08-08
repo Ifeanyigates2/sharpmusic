@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PlayAllButton } from "@/components/PlayAllButton";
 import { PlaylistTrackActions } from "@/components/PlaylistTrackActions";
 import { TrackCard } from "@/components/TrackCard";
 import { getFavoriteIds } from "@/lib/favorites";
@@ -44,13 +45,16 @@ export default async function PlaylistDetailPage({ params }: Props) {
           ← Playlists
         </Link>
       </p>
-      <div className="mt-4 mb-8 max-w-2xl">
-        <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-[color:var(--foam)]">
-          {playlist.name}
-        </h1>
-        <p className="mt-3 text-[color:var(--mist)]">
-          {tracks.length} track{tracks.length === 1 ? "" : "s"} on this device
-        </p>
+      <div className="mt-4 mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-[color:var(--foam)]">
+            {playlist.name}
+          </h1>
+          <p className="mt-3 text-[color:var(--mist)]">
+            {tracks.length} track{tracks.length === 1 ? "" : "s"} on this device
+          </p>
+        </div>
+        {tracks.length > 0 ? <PlayAllButton tracks={tracks} /> : null}
       </div>
 
       {tracks.length === 0 ? (

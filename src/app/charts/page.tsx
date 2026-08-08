@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CoverArt } from "@/components/CoverArt";
+import { ChartsList } from "@/components/ChartsList";
 import { getWeeklyCharts } from "@/lib/charts";
-import { formatDownloads } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Charts",
@@ -43,45 +42,7 @@ export default async function ChartsPage() {
           to get rankings started.
         </p>
       ) : (
-        <ol className="divide-y divide-white/10 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
-          {entries.map(({ rank, track, downloads }) => (
-            <li key={track.id}>
-              <Link
-                href={`/track/${track.id}`}
-                className="flex items-center gap-4 px-4 py-3 transition hover:bg-white/[0.04] sm:gap-5 sm:px-5"
-              >
-                <span
-                  className={`w-7 shrink-0 text-center font-[family-name:var(--font-display)] text-lg font-bold tabular-nums ${
-                    rank <= 3
-                      ? "text-[color:var(--signal)]"
-                      : "text-[color:var(--mist)]"
-                  }`}
-                >
-                  {rank}
-                </span>
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-sm sm:h-14 sm:w-14">
-                  <CoverArt track={track} sizes="56px" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-[family-name:var(--font-display)] font-semibold text-[color:var(--foam)]">
-                    {track.title}
-                  </p>
-                  <p className="truncate text-sm text-[color:var(--mist)]">
-                    {track.artist} · {track.genre}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-sm tabular-nums text-[color:var(--foam)]">
-                    {formatDownloads(downloads)}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-wider text-[color:var(--mist)]">
-                    {source === "week" ? "This week" : "All time"}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ol>
+        <ChartsList entries={entries} source={source} />
       )}
     </div>
   );

@@ -2,17 +2,27 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CatalogScroller } from "@/components/CatalogScroller";
 import { HeroBackdrop } from "@/components/HeroBackdrop";
+import { LifestyleVideoCard } from "@/components/LifestyleVideoCard";
+import { MusicVideoCard } from "@/components/MusicVideoCard";
+import { PlayAllButton } from "@/components/PlayAllButton";
 import { getFavoriteIds } from "@/lib/favorites";
-import { getAllTracks } from "@/lib/store";
+import { listLifestyleVideos } from "@/lib/lifestyle-store";
+import { getAllTracks, getTracksWithVideos } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [tracks, favoriteIds] = await Promise.all([
+  const [tracks, favoriteIds, musicVideos, lifestyle] = await Promise.all([
     getAllTracks(),
     getFavoriteIds(),
+    getTracksWithVideos(),
+    listLifestyleVideos(),
   ]);
   const featured = tracks.slice(0, 16);
+  const watchMusic = musicVideos.slice(0, 4);
+  const watchLifestyle = lifestyle.slice(0, 3);
+  const showWatch = watchMusic.length > 0 || watchLifestyle.length > 0;
+
   const heroCovers = tracks
     .filter((t) => t.coverImageUrl)
     .slice(0, 12)
@@ -53,12 +63,17 @@ export default async function HomePage() {
                 Music from everywhere, ready to download.
               </h1>
             </div>
-            <Link
-              href="/browse"
-              className="rise rise-delay-2 shrink-0 self-start rounded-sm bg-[color:var(--signal)] px-5 py-2.5 text-sm font-semibold text-[color:var(--ink)] transition hover:brightness-110 sm:self-auto"
-            >
-              Browse the catalog
-            </Link>
+            <div className="rise rise-delay-2 flex flex-wrap items-center gap-3 self-start sm:self-auto">
+              {featured.length > 0 ? (
+                <PlayAllButton tracks={tracks} label="Play catalog" />
+              ) : null}
+              <Link
+                href="/browse"
+                className="rounded-sm border border-white/20 px-5 py-2.5 text-sm font-semibold text-[color:var(--foam)] transition hover:border-[color:var(--signal)] hover:text-[color:var(--signal)]"
+              >
+                Browse
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -89,6 +104,61 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {showWatch ? (
+        <section className="border-t border-white/10">
+          <div className="mx-auto max-w-6xl px-4 py-14 md:px-6 md:py-16">
+            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-[color:var(--foam)] sm:text-3xl">
+                  Watch
+                </h2>
+                <p className="mt-2 text-sm text-[color:var(--mist)]">
+                  Music videos and lifestyle clips from the catalog.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm font-semibold">
+                <Link
+                  href="/videos"
+                  className="text-[color:var(--signal)] hover:underline"
+                >
+                  All music videos →
+                </Link>
+                <Link
+                  href="/lifestyle"
+                  className="text-[color:var(--signal)] hover:underline"
+                >
+                  Lifestyle →
+                </Link>
+              </div>
+            </div>
+
+            {watchMusic.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {watchMusic.map((track) => (
+                  <MusicVideoCard
+                    key={track.id}
+                    track={track}
+                    queue={musicVideos}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            {watchLifestyle.length > 0 ? (
+              <div
+                className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${
+                  watchMusic.length > 0 ? "mt-6" : ""
+                }`}
+              >
+                {watchLifestyle.map((video) => (
+                  <LifestyleVideoCard key={video.id} video={video} />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <section className="border-t border-white/10">
         <div className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-20">

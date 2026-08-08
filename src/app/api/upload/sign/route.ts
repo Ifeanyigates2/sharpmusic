@@ -27,11 +27,28 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       kind?: string;
     };
-    const kind = body.kind === "image" ? "image" : "audio";
+    const kind =
+      body.kind === "image"
+        ? "image"
+        : body.kind === "music-video"
+          ? "music-video"
+          : body.kind === "lifestyle-video"
+            ? "lifestyle-video"
+            : body.kind === "lifestyle-cover"
+              ? "lifestyle-cover"
+              : "audio";
     const folder =
-      kind === "image" ? "sharpmusic/covers" : "sharpmusic/audio";
+      kind === "image"
+        ? "sharpmusic/covers"
+        : kind === "music-video"
+          ? "sharpmusic/videos"
+          : kind === "lifestyle-video"
+            ? "sharpmusic/lifestyle"
+            : kind === "lifestyle-cover"
+              ? "sharpmusic/lifestyle-covers"
+              : "sharpmusic/audio";
     const resourceType: CloudinaryResourceType =
-      kind === "image" ? "image" : "video";
+      kind === "image" || kind === "lifestyle-cover" ? "image" : "video";
 
     const signature = createUploadSignature(folder, resourceType);
     return NextResponse.json(signature);

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Film } from "lucide-react";
 import { AddToPlaylistButton } from "@/components/AddToPlaylistButton";
 import { CoverArt } from "@/components/CoverArt";
 import { DownloadButton } from "@/components/DownloadButton";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { MusicVideoPlayer } from "@/components/MusicVideoPlayer";
 import { PlayButton } from "@/components/PlayButton";
 import { ShareButton } from "@/components/ShareButton";
 import { TrackCard } from "@/components/TrackCard";
@@ -64,6 +66,7 @@ export default async function TrackPage({ params }: Props) {
         <div>
           <p className="text-sm uppercase tracking-[0.18em] text-[color:var(--signal)]">
             {track.genre} · {track.country}
+            {track.videoUrl ? " · Music video" : ""}
           </p>
           <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-bold tracking-tight text-[color:var(--foam)] sm:text-5xl">
             {track.title}
@@ -107,6 +110,15 @@ export default async function TrackPage({ params }: Props) {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <PlayButton track={track} queue={catalog} />
+            {track.videoUrl ? (
+              <a
+                href="#video"
+                className="inline-flex items-center gap-2 rounded-sm border border-white/20 px-5 py-3 text-sm font-semibold text-[color:var(--foam)] transition hover:border-[color:var(--signal)] hover:text-[color:var(--signal)]"
+              >
+                <Film size={16} />
+                Watch video
+              </a>
+            ) : null}
             <DownloadButton track={track} initiallyOwned={owned} />
             <FavoriteButton
               trackId={track.id}
@@ -121,6 +133,24 @@ export default async function TrackPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {track.videoUrl ? (
+        <section id="video" className="mt-14 scroll-mt-28">
+          <div className="mb-5">
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-[color:var(--foam)]">
+              Music video
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--mist)]">
+              Watch the official video for {track.title}.
+            </p>
+          </div>
+          <MusicVideoPlayer
+            src={track.videoUrl}
+            title={track.title}
+            poster={track.coverImageUrl || undefined}
+          />
+        </section>
+      ) : null}
 
       {related.length > 0 ? (
         <section className="mt-16 border-t border-white/10 pt-12">
@@ -145,7 +175,7 @@ export default async function TrackPage({ params }: Props) {
               <TrackCard
                 key={item.id}
                 track={item}
-                queue={related}
+                queue={catalog}
                 favorited={favoriteSet.has(item.id)}
               />
             ))}

@@ -76,6 +76,9 @@ export async function PATCH(request: Request, { params }: Params) {
         publicId: String(body.publicId ?? "").trim() || undefined,
         coverImageUrl: String(body.coverImageUrl ?? "").trim() || undefined,
         coverPublicId: String(body.coverPublicId ?? "").trim() || undefined,
+        videoUrl: String(body.videoUrl ?? "").trim() || undefined,
+        videoPublicId: String(body.videoPublicId ?? "").trim() || undefined,
+        clearVideo: body.clearVideo === true,
       },
     );
 

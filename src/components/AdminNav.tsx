@@ -5,6 +5,7 @@ const links = [
   { href: "/admin/dashboard", id: "home", label: "Home" },
   { href: "/admin/tracks", id: "tracks", label: "Manage tracks" },
   { href: "/upload", id: "upload", label: "Upload" },
+  { href: "/admin/lifestyle", id: "lifestyle", label: "Lifestyle" },
   { href: "/admin/requests", id: "requests", label: "Requests" },
   { href: "/admin/artists", id: "artists", label: "Artists" },
   { href: "/admin/analytics", id: "analytics", label: "Analytics" },
@@ -20,7 +21,8 @@ export function AdminNav({
     | "edit"
     | "analytics"
     | "artists"
-    | "requests";
+    | "requests"
+    | "lifestyle";
 }) {
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">

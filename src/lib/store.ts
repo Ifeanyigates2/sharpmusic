@@ -13,6 +13,7 @@ import { TrackModel } from "@/models/Track";
 type StoredTrack = Track & {
   cloudinaryPublicId?: string;
   coverPublicId?: string;
+  videoPublicId?: string;
 };
 
 function toTrack(doc: {
@@ -28,6 +29,7 @@ function toTrack(doc: {
   currency: string;
   audioUrl: string;
   coverImageUrl?: string;
+  videoUrl?: string;
   coverHue: number;
   downloads: number;
   description: string;
@@ -35,6 +37,7 @@ function toTrack(doc: {
   createdAt: string;
   cloudinaryPublicId?: string;
   coverPublicId?: string;
+  videoPublicId?: string;
 }): StoredTrack {
   return {
     id: doc.id,
@@ -49,6 +52,7 @@ function toTrack(doc: {
     currency: doc.currency,
     audioUrl: doc.audioUrl,
     coverImageUrl: doc.coverImageUrl || "",
+    videoUrl: doc.videoUrl || "",
     coverHue: doc.coverHue,
     downloads: doc.downloads,
     description: doc.description,
@@ -59,6 +63,7 @@ function toTrack(doc: {
         : new Date(doc.createdAt as Date).toISOString(),
     cloudinaryPublicId: doc.cloudinaryPublicId || "",
     coverPublicId: doc.coverPublicId || "",
+    videoPublicId: doc.videoPublicId || "",
   };
 }
 
@@ -113,6 +118,11 @@ export async function getAllTracks(): Promise<Track[]> {
 
   // Newest uploads always lead the catalog; demo tracks follow.
   return [...uploadedVisible, ...demoVisible];
+}
+
+/** Tracks that have an attached music video. */
+export async function getTracksWithVideos(): Promise<Track[]> {
+  return (await getAllTracks()).filter((t) => Boolean(t.videoUrl?.trim()));
 }
 
 /** All catalog tracks for admin management (includes source flag). */
@@ -196,6 +206,8 @@ export function buildTrack(
     cloudinaryPublicId?: string;
     coverImageUrl?: string;
     coverPublicId?: string;
+    videoUrl?: string;
+    videoPublicId?: string;
     downloads?: number;
     createdAt?: string;
     coverHue?: number;
@@ -218,6 +230,7 @@ export function buildTrack(
     currency: "USD",
     audioUrl,
     coverImageUrl: extras?.coverImageUrl || "",
+    videoUrl: extras?.videoUrl || "",
     coverHue: hue,
     downloads: extras?.downloads ?? 0,
     description:
@@ -235,6 +248,7 @@ export async function saveTrack(
   track: Track,
   cloudinaryPublicId = "",
   coverPublicId = "",
+  videoPublicId = "",
 ): Promise<Track> {
   if (!isMongoConfigured()) {
     throw new Error("MONGODB_URI is required to save uploaded tracks");
@@ -243,7 +257,7 @@ export async function saveTrack(
   await connectMongo();
   await TrackModel.findOneAndUpdate(
     { id: track.id },
-    { ...track, cloudinaryPublicId, coverPublicId },
+    { ...track, cloudinaryPublicId, coverPublicId, videoPublicId },
     { upsert: true, new: true, setDefaultsOnInsert: true },
   );
   await HiddenTrackModel.deleteOne({ id: track.id });
@@ -278,6 +292,8 @@ export async function addUploadedTrackFromCloudinary(
     publicId?: string;
     coverImageUrl?: string;
     coverPublicId?: string;
+    videoUrl?: string;
+    videoPublicId?: string;
   },
 ): Promise<Track> {
   if (!isMongoConfigured()) {
@@ -290,8 +306,15 @@ export async function addUploadedTrackFromCloudinary(
     cloudinaryPublicId: audio.publicId,
     coverImageUrl: audio.coverImageUrl,
     coverPublicId: audio.coverPublicId,
+    videoUrl: audio.videoUrl,
+    videoPublicId: audio.videoPublicId,
   });
-  return saveTrack(track, audio.publicId || "", audio.coverPublicId || "");
+  return saveTrack(
+    track,
+    audio.publicId || "",
+    audio.coverPublicId || "",
+    audio.videoPublicId || "",
+  );
 }
 
 export async function updateTrackFromAdmin(
@@ -303,6 +326,9 @@ export async function updateTrackFromAdmin(
     publicId?: string;
     coverImageUrl?: string;
     coverPublicId?: string;
+    videoUrl?: string;
+    videoPublicId?: string;
+    clearVideo?: boolean;
   },
 ): Promise<Track> {
   if (!isMongoConfigured()) {
@@ -328,6 +354,8 @@ export async function updateTrackFromAdmin(
   let cloudinaryPublicId = stored?.cloudinaryPublicId || "";
   let coverImageUrl = existing.coverImageUrl || "";
   let coverPublicId = stored?.coverPublicId || "";
+  let videoUrl = existing.videoUrl || "";
+  let videoPublicId = stored?.videoPublicId || "";
 
   if (media?.audioUrl) {
     if (cloudinaryPublicId) {
@@ -346,15 +374,30 @@ export async function updateTrackFromAdmin(
     coverPublicId = media.coverPublicId || "";
   }
 
+  if (media?.clearVideo) {
+    if (videoPublicId) {
+      await destroyCloudinaryAsset(videoPublicId, "video");
+    }
+    videoUrl = "";
+    videoPublicId = "";
+  } else if (media?.videoUrl) {
+    if (videoPublicId) {
+      await destroyCloudinaryAsset(videoPublicId, "video");
+    }
+    videoUrl = media.videoUrl;
+    videoPublicId = media.videoPublicId || "";
+  }
+
   const track = buildTrack(id, input, audioUrl, {
     durationSec,
     coverImageUrl,
+    videoUrl,
     downloads: existing.downloads,
     createdAt: existing.createdAt,
     coverHue: existing.coverHue,
   });
 
-  return saveTrack(track, cloudinaryPublicId, coverPublicId);
+  return saveTrack(track, cloudinaryPublicId, coverPublicId, videoPublicId);
 }
 
 export async function deleteTrackById(id: string): Promise<void> {
@@ -377,6 +420,9 @@ export async function deleteTrackById(id: string): Promise<void> {
     }
     if (stored.coverPublicId) {
       await destroyCloudinaryAsset(stored.coverPublicId, "image");
+    }
+    if (stored.videoPublicId) {
+      await destroyCloudinaryAsset(stored.videoPublicId, "video");
     }
     await TrackModel.deleteOne({ id });
   }

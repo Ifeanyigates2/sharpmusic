@@ -5,6 +5,7 @@ import { useState } from "react";
 import { GripVertical, ListMusic, Loader2, X } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
 import { usePlayer } from "@/components/PlayerProvider";
+import { artistPath } from "@/lib/format";
 import type { Track } from "@/lib/types";
 
 export function QueuePanel({
@@ -212,7 +213,7 @@ function QueueRow({
         </p>
         <p className="truncate text-xs text-[color:var(--mist)]">
           <Link
-            href={`/track/${track.id}`}
+            href={artistPath(track.artist)}
             className="hover:text-[color:var(--signal)]"
             onClick={(e) => e.stopPropagation()}
           >

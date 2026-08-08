@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Check,
   Download,
+  Film,
   ListEnd,
   MoreVertical,
   Pause,
@@ -75,15 +76,23 @@ export function TrackCard({
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-80" />
-        <span className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-sm bg-[color:var(--signal)] text-[color:var(--ink)] opacity-0 transition group-hover:opacity-100">
+        <span className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-sm bg-[color:var(--signal)] text-[color:var(--ink)] opacity-100 shadow-sm transition sm:opacity-0 sm:group-hover:opacity-100">
           {active ? (
             <Pause size={14} fill="currentColor" />
           ) : (
             <Play size={14} fill="currentColor" />
           )}
         </span>
-        <span className="absolute left-2 top-2 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--foam)]">
-          {track.pricing === "free" ? "Free" : formatPrice(track.priceCents)}
+        <span className="absolute left-2 top-2 flex flex-col gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--foam)]">
+            {track.pricing === "free" ? "Free" : formatPrice(track.priceCents)}
+          </span>
+          {track.videoUrl ? (
+            <span className="inline-flex w-fit items-center gap-1 rounded-sm bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--foam)]">
+              <Film size={10} />
+              Video
+            </span>
+          ) : null}
         </span>
         {isUpNext || queuedFlash ? (
           <span className="absolute bottom-2 left-2 rounded-sm bg-[color:var(--signal)]/90 px-1.5 py-0.5 text-[10px] font-semibold text-[color:var(--ink)]">
@@ -168,6 +177,16 @@ export function TrackCard({
                   <Download size={12} />
                   Open track
                 </Link>
+                {track.videoUrl ? (
+                  <Link
+                    href={`/track/${track.id}#video`}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-[color:var(--foam)] hover:bg-white/[0.06]"
+                  >
+                    <Film size={12} />
+                    Watch video
+                  </Link>
+                ) : null}
               </div>
             ) : null}
           </div>

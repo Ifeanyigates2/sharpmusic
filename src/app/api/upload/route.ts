@@ -100,6 +100,8 @@ export async function POST(request: Request) {
           publicId: String(body.publicId ?? ""),
           coverImageUrl: String(body.coverImageUrl ?? "").trim(),
           coverPublicId: String(body.coverPublicId ?? "").trim(),
+          videoUrl: String(body.videoUrl ?? "").trim(),
+          videoPublicId: String(body.videoPublicId ?? "").trim(),
         },
       );
 

@@ -17,6 +17,8 @@ export interface Track {
   currency: string;
   audioUrl: string;
   coverImageUrl?: string;
+  /** Optional music video (Cloudinary URL) */
+  videoUrl?: string;
   coverHue: number;
   downloads: number;
   description: string;

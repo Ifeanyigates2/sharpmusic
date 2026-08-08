@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PlayAllButton } from "@/components/PlayAllButton";
 import { TrackCard } from "@/components/TrackCard";
 import { getFavoriteIds } from "@/lib/favorites";
 import { getAllTracks } from "@/lib/store";
@@ -45,9 +46,12 @@ export default async function FavoritesPage() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-[color:var(--mist)]">
-            {tracks.length} saved track{tracks.length === 1 ? "" : "s"}
-          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <PlayAllButton tracks={tracks} />
+            <p className="text-sm text-[color:var(--mist)]">
+              {tracks.length} saved track{tracks.length === 1 ? "" : "s"}
+            </p>
+          </div>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {tracks.map((track) => (
               <TrackCard

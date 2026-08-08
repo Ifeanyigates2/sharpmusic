@@ -12,18 +12,21 @@ export function Footer() {
             the Sharp Music catalog.
           </p>
         </div>
-        <div className="flex flex-wrap gap-6 text-sm text-[color:var(--mist)]">
+        <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-[color:var(--mist)]">
           <Link href="/browse" className="hover:text-[color:var(--signal)]">
             Browse
           </Link>
           <Link href="/charts" className="hover:text-[color:var(--signal)]">
             Charts
           </Link>
-          <Link href="/playlists" className="hover:text-[color:var(--signal)]">
-            Playlists
+          <Link href="/videos" className="hover:text-[color:var(--signal)]">
+            Music videos
           </Link>
-          <Link href="/history" className="hover:text-[color:var(--signal)]">
-            History
+          <Link href="/lifestyle" className="hover:text-[color:var(--signal)]">
+            Lifestyle
+          </Link>
+          <Link href="/favorites" className="hover:text-[color:var(--signal)]">
+            Favorites
           </Link>
           <Link href="/request" className="hover:text-[color:var(--signal)]">
             Request

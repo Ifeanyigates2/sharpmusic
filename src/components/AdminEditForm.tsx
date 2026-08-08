@@ -16,7 +16,7 @@ type SignResponse = {
   resourceType: string;
 };
 
-async function signUpload(kind: "audio" | "image") {
+async function signUpload(kind: "audio" | "image" | "music-video") {
   const signRes = await fetch("/api/upload/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -56,6 +56,7 @@ export function AdminEditForm({ track }: { track: Track }) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasVideo = Boolean(track.videoUrl?.trim());
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,6 +68,8 @@ export function AdminEditForm({ track }: { track: Track }) {
     const fd = new FormData(form);
     const audio = fd.get("audio");
     const cover = fd.get("cover");
+    const video = fd.get("video");
+    const clearVideo = fd.get("clearVideo") === "on";
 
     try {
       const payload: Record<string, unknown> = {
@@ -104,6 +107,19 @@ export function AdminEditForm({ track }: { track: Track }) {
         payload.coverPublicId = uploaded.public_id;
       }
 
+      if (clearVideo) {
+        payload.clearVideo = true;
+      } else if (video instanceof File && video.size > 0) {
+        if (video.size > 200 * 1024 * 1024) {
+          throw new Error("Music video must be under 200MB.");
+        }
+        setProgress("Uploading music video…");
+        const sign = await signUpload("music-video");
+        const uploaded = await uploadToCloudinary(video, sign);
+        payload.videoUrl = uploaded.secure_url;
+        payload.videoPublicId = uploaded.public_id;
+      }
+
       setProgress("Updating track…");
       const res = await fetch(`/api/tracks/${track.id}`, {
         method: "PATCH",
@@ -129,7 +145,8 @@ export function AdminEditForm({ track }: { track: Track }) {
           <CoverArt track={track} sizes="80px" />
         </div>
         <p className="text-sm text-[color:var(--mist)]">
-          Leave audio/cover empty to keep the current files.
+          Leave audio/cover/video empty to keep the current files.
+          {hasVideo ? " This track already has a music video." : ""}
         </p>
       </div>
 
@@ -152,6 +169,25 @@ export function AdminEditForm({ track }: { track: Track }) {
           className="block w-full rounded-sm border border-dashed border-white/20 bg-white/[0.03] px-4 py-5 text-sm text-[color:var(--foam)] file:mr-4 file:rounded-sm file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[color:var(--foam)]"
         />
       </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm text-[color:var(--mist)]">
+          {hasVideo ? "Replace music video (optional)" : "Add music video (optional)"}
+        </span>
+        <input
+          type="file"
+          name="video"
+          accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+          className="block w-full rounded-sm border border-dashed border-white/20 bg-white/[0.03] px-4 py-5 text-sm text-[color:var(--foam)] file:mr-4 file:rounded-sm file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[color:var(--foam)]"
+        />
+      </label>
+
+      {hasVideo ? (
+        <label className="flex items-center gap-2 text-sm text-[color:var(--mist)]">
+          <input type="checkbox" name="clearVideo" className="rounded-sm" />
+          Remove music video
+        </label>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Title" name="title" required defaultValue={track.title} />

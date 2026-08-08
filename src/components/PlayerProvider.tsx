@@ -33,6 +33,7 @@ type PlayerContextValue = {
   shuffle: boolean;
   repeatMode: RepeatMode;
   sleepEndsAt: number | null;
+  playbackError: string | null;
   playTrack: (track: Track, queue?: Track[]) => void;
   playAsNext: (track: Track) => void;
   playNext: () => void;
@@ -44,6 +45,7 @@ type PlayerContextValue = {
   toggleShuffle: () => void;
   cycleRepeat: () => void;
   setSleepMinutes: (minutes: number | null) => void;
+  clearPlaybackError: () => void;
   hasNext: boolean;
   hasPrevious: boolean;
 };
@@ -106,6 +108,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [shuffle, setShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
   const [sleepEndsAt, setSleepEndsAt] = useState<number | null>(null);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const durationRef = useRef(0);
 
   const rememberPlayed = useCallback((trackId: string) => {
@@ -228,11 +231,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setDuration(fallbackDur);
       setNextReason(meta?.reason ?? null);
       setNextSource(meta?.source ?? null);
+      setPlaybackError(null);
       prefetchRef.current = null;
       setUpNext(null);
       audio.src = trackStreamUrl(track.id);
       void audio.play().catch(() => {
         setPlaying(false);
+        setPlaybackError("Couldn’t start playback. Tap play to retry.");
       });
       void fetch("/api/history", {
         method: "POST",
@@ -329,8 +334,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const onEnded = () => {
       void resolveNextRef.current();
     };
-    const onPlay = () => setPlaying(true);
+    const onPlay = () => {
+      setPlaying(true);
+      setPlaybackError(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("sharpmusic:pause-videos"));
+      }
+    };
     const onPause = () => setPlaying(false);
+    const onError = () => {
+      setPlaying(false);
+      setPlaybackError("Stream failed. Check your connection and try again.");
+    };
 
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
@@ -338,6 +353,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("error", onError);
 
     return () => {
       prefetchAbortRef.current?.abort();
@@ -349,6 +365,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("error", onError);
     };
   }, []);
 
@@ -560,6 +577,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }, minutes * 60_000);
   }, []);
 
+  const clearPlaybackError = useCallback(() => setPlaybackError(null), []);
+
   const currentId = current?.id;
   const hasNext = Boolean(currentId && queue.length > 0);
   const hasPrevious = Boolean(
@@ -568,6 +587,106 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         queue.length > 1 ||
         progress > 3),
   );
+
+  // Keep page padding in sync with whether the player bar is visible
+  useEffect(() => {
+    document.body.classList.toggle("player-active", Boolean(current));
+    return () => document.body.classList.remove("player-active");
+  }, [current]);
+
+  // Media Session — lock screen / headset controls
+  useEffect(() => {
+    if (!("mediaSession" in navigator) || !current) return;
+
+    const artwork = current.coverImageUrl
+      ? [
+          {
+            src: current.coverImageUrl,
+            sizes: "512x512",
+            type: "image/jpeg",
+          },
+        ]
+      : [];
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: current.title,
+      artist: current.artist,
+      album: "Sharp Music",
+      artwork,
+    });
+
+    const setHandler = (
+      action: MediaSessionAction,
+      handler: MediaSessionActionHandler | null,
+    ) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        // Unsupported action on this browser
+      }
+    };
+
+    setHandler("play", () => {
+      void audioRef.current?.play();
+    });
+    setHandler("pause", () => {
+      audioRef.current?.pause();
+    });
+    setHandler("previoustrack", () => playPrevious());
+    setHandler("nexttrack", () => playNext());
+    setHandler("seekto", (details) => {
+      const audio = audioRef.current;
+      if (!audio || details.seekTime == null) return;
+      audio.currentTime = details.seekTime;
+      setProgress(details.seekTime);
+    });
+
+    return () => {
+      setHandler("play", null);
+      setHandler("pause", null);
+      setHandler("previoustrack", null);
+      setHandler("nexttrack", null);
+      setHandler("seekto", null);
+    };
+  }, [current, playNext, playPrevious]);
+
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+  }, [playing]);
+
+  // Spacebar play/pause when not typing / not controlling a video
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.code !== "Space" && e.key !== " ") return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.tagName === "VIDEO" ||
+          target.tagName === "BUTTON" ||
+          target.isContentEditable ||
+          target.closest("video"))
+      ) {
+        return;
+      }
+      // Don't steal space from an active page video
+      const activeVideo = Array.from(document.querySelectorAll("video")).some(
+        (v) => !v.paused && !v.ended,
+      );
+      if (activeVideo) return;
+      if (!currentRef.current) return;
+      e.preventDefault();
+      const audio = audioRef.current;
+      if (!audio) return;
+      if (audio.paused) void audio.play();
+      else audio.pause();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <PlayerContext.Provider
@@ -584,6 +703,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         shuffle,
         repeatMode,
         sleepEndsAt,
+        playbackError,
         playTrack,
         playAsNext,
         playNext,
@@ -595,6 +715,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         toggleShuffle,
         cycleRepeat,
         setSleepMinutes,
+        clearPlaybackError,
         hasNext,
         hasPrevious,
       }}

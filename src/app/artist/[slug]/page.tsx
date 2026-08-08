@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PlayAllButton } from "@/components/PlayAllButton";
 import { ShareButton } from "@/components/ShareButton";
 import { TrackCard } from "@/components/TrackCard";
 import { getArtistBySlug } from "@/lib/artists";
+import { getFavoriteIds } from "@/lib/favorites";
 import { profileHasSocials } from "@/lib/news-store";
 import type { SocialPlatform } from "@/lib/news-types";
 import { artistShareMetadata } from "@/lib/share-metadata";
@@ -47,6 +49,8 @@ export default async function ArtistPage({ params }: Props) {
 
   const regions = [...new Set(artist.tracks.map((t) => t.region))];
   const genres = [...new Set(artist.tracks.map((t) => t.genre))];
+  const favoriteIds = await getFavoriteIds();
+  const favoriteSet = new Set(favoriteIds);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-28 md:px-6">
@@ -65,6 +69,9 @@ export default async function ArtistPage({ params }: Props) {
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
+          {artist.tracks.length > 0 ? (
+            <PlayAllButton tracks={artist.tracks} />
+          ) : null}
           {socials.map(([platform, handle]) => (
             <a
               key={platform}
@@ -86,7 +93,12 @@ export default async function ArtistPage({ params }: Props) {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {artist.tracks.map((track) => (
-          <TrackCard key={track.id} track={track} queue={artist.tracks} />
+          <TrackCard
+            key={track.id}
+            track={track}
+            queue={artist.tracks}
+            favorited={favoriteSet.has(track.id)}
+          />
         ))}
       </div>
 
