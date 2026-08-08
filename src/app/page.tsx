@@ -2,12 +2,16 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CatalogScroller } from "@/components/CatalogScroller";
 import { HeroBackdrop } from "@/components/HeroBackdrop";
+import { getFavoriteIds } from "@/lib/favorites";
 import { getAllTracks } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const tracks = await getAllTracks();
+  const [tracks, favoriteIds] = await Promise.all([
+    getAllTracks(),
+    getFavoriteIds(),
+  ]);
   const featured = tracks.slice(0, 16);
   const heroCovers = tracks
     .filter((t) => t.coverImageUrl)
@@ -69,15 +73,19 @@ export default async function HomePage() {
               </p>
             </div>
             <Link
-              href="/browse"
+              href="/charts"
               className="shrink-0 text-sm font-semibold text-[color:var(--signal)] hover:underline"
             >
-              View all →
+              Charts →
             </Link>
           </div>
 
           <div className="mx-auto max-w-6xl">
-            <CatalogScroller tracks={featured} queue={tracks} />
+            <CatalogScroller
+              tracks={featured}
+              queue={tracks}
+              favoriteIds={favoriteIds}
+            />
           </div>
         </div>
       </section>

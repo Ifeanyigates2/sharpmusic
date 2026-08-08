@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BrowseFilters } from "@/components/BrowseFilters";
 import { TrackCard } from "@/components/TrackCard";
+import { getFavoriteIds } from "@/lib/favorites";
 import { getAllTracks, searchTracks } from "@/lib/store";
 
 export const metadata: Metadata = {
@@ -26,10 +27,11 @@ export default async function BrowsePage({ searchParams }: Props) {
   const hasFilters = Boolean(
     params.q?.trim() || params.genre || params.region || params.pricing,
   );
-  // Same catalog order as homepage when no filters are applied
-  const tracks = hasFilters
-    ? await searchTracks(params)
-    : await getAllTracks();
+  const [tracks, favoriteIds] = await Promise.all([
+    hasFilters ? searchTracks(params) : getAllTracks(),
+    getFavoriteIds(),
+  ]);
+  const favoriteSet = new Set(favoriteIds);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-24 pt-28 md:px-6">
@@ -70,7 +72,12 @@ export default async function BrowsePage({ searchParams }: Props) {
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {tracks.map((track) => (
-            <TrackCard key={track.id} track={track} queue={tracks} />
+            <TrackCard
+              key={track.id}
+              track={track}
+              queue={tracks}
+              favorited={favoriteSet.has(track.id)}
+            />
           ))}
         </div>
       )}

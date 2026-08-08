@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Download, Pause, Play } from "lucide-react";
 import { CoverArt } from "@/components/CoverArt";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { usePlayer } from "@/components/PlayerProvider";
 import { formatDuration, formatPrice, artistPath } from "@/lib/format";
 import type { Track } from "@/lib/types";
@@ -10,10 +11,14 @@ import type { Track } from "@/lib/types";
 export function TrackCard({
   track,
   queue,
+  favorited = false,
+  showFavorite = true,
 }: {
   track: Track;
   /** Catalog order used for autoplay / next-track streaming. */
   queue?: Track[];
+  favorited?: boolean;
+  showFavorite?: boolean;
 }) {
   const { current, playing, playTrack } = usePlayer();
   const active = current?.id === track.id && playing;
@@ -44,6 +49,16 @@ export function TrackCard({
           {track.pricing === "free" ? "Free" : formatPrice(track.priceCents)}
         </span>
       </button>
+
+      {showFavorite ? (
+        <div className="absolute right-1.5 top-1.5 z-10 opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100">
+          <FavoriteButton
+            trackId={track.id}
+            initiallyFavorited={favorited}
+            size="sm"
+          />
+        </div>
+      ) : null}
 
       <div className="mt-2.5 space-y-0.5">
         <div className="flex items-start justify-between gap-2">

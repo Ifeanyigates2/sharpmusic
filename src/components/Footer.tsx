@@ -12,9 +12,15 @@ export function Footer() {
             the Sharp Music catalog.
           </p>
         </div>
-        <div className="flex gap-6 text-sm text-[color:var(--mist)]">
+        <div className="flex flex-wrap gap-6 text-sm text-[color:var(--mist)]">
           <Link href="/browse" className="hover:text-[color:var(--signal)]">
             Browse
+          </Link>
+          <Link href="/charts" className="hover:text-[color:var(--signal)]">
+            Charts
+          </Link>
+          <Link href="/favorites" className="hover:text-[color:var(--signal)]">
+            Favorites
           </Link>
           <Link href="/request" className="hover:text-[color:var(--signal)]">
             Request

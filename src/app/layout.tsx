@@ -27,6 +27,22 @@ export const metadata: Metadata = {
   description:
     "Browse, stream, buy, and download tracks from Sharp Music. Free library and marketplace on sharpmusic.com.",
   metadataBase: new URL("https://sharpmusic.com"),
+  openGraph: {
+    type: "website",
+    siteName: "Sharp Music",
+    title: "Sharp Music — Download music from around the world",
+    description:
+      "Browse, stream, buy, and download tracks from Sharp Music.",
+    url: "/",
+    images: [{ url: "/logo.png" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sharp Music — Download music from around the world",
+    description:
+      "Browse, stream, buy, and download tracks from Sharp Music.",
+    images: ["/logo.png"],
+  },
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],
     apple: [{ url: "/logo.png" }],

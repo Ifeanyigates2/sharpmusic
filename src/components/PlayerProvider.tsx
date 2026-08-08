@@ -12,6 +12,12 @@ import {
 import { trackStreamUrl } from "@/lib/stream";
 import type { Track } from "@/lib/types";
 
+type UpNext = {
+  track: Track;
+  reason: string;
+  source: "gemini" | "fallback";
+};
+
 type PlayerContextValue = {
   current: Track | null;
   queue: Track[];
@@ -21,9 +27,11 @@ type PlayerContextValue = {
   nextReason: string | null;
   nextSource: "gemini" | "fallback" | null;
   resolvingNext: boolean;
+  upNext: UpNext | null;
   playTrack: (track: Track, queue?: Track[]) => void;
   playNext: () => void;
   playPrevious: () => void;
+  removeFromQueue: (trackId: string) => void;
   toggle: () => void;
   seek: (ratio: number) => void;
   hasNext: boolean;
@@ -77,6 +85,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [resolvingNext, setResolvingNext] = useState(false);
+  const [upNext, setUpNext] = useState<UpNext | null>(null);
   const durationRef = useRef(0);
 
   const rememberPlayed = useCallback((trackId: string) => {
@@ -128,18 +137,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       prefetchAbortRef.current = controller;
       prefetchRef.current = null;
+      setUpNext(null);
 
       void (async () => {
         try {
           const pick = await fetchAiNext(from, controller.signal);
           if (controller.signal.aborted) return;
           if (currentRef.current?.id !== from.id) return;
-          prefetchRef.current = {
-            fromId: from.id,
+          const next: UpNext = {
             track: pick.track,
             reason: pick.reason,
             source: pick.source,
           };
+          prefetchRef.current = {
+            fromId: from.id,
+            ...next,
+          };
+          setUpNext(next);
         } catch {
           // Prefetch is best-effort; ended/skip will resolve live
         }
@@ -169,6 +183,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setNextReason(meta?.reason ?? null);
       setNextSource(meta?.source ?? null);
       prefetchRef.current = null;
+      setUpNext(null);
       audio.src = trackStreamUrl(track.id);
       void audio.play().catch(() => {
         setPlaying(false);
@@ -292,6 +307,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     void resolveAndPlayNext();
   }, [resolveAndPlayNext]);
 
+  const removeFromQueue = useCallback((trackId: string) => {
+    const cur = currentRef.current;
+    if (cur?.id === trackId) return;
+
+    const nextQueue = queueRef.current.filter((t) => t.id !== trackId);
+    queueRef.current = nextQueue;
+    setQueue(nextQueue);
+
+    if (upNext?.track.id === trackId) {
+      prefetchRef.current = null;
+      setUpNext(null);
+      if (cur) prefetchNext(cur);
+    }
+  }, [prefetchNext, upNext?.track.id]);
+
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
     const cur = currentRef.current;
@@ -356,9 +386,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         nextReason,
         nextSource,
         resolvingNext,
+        upNext,
         playTrack,
         playNext,
         playPrevious,
+        removeFromQueue,
         toggle,
         seek,
         hasNext,

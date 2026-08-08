@@ -7,15 +7,18 @@ import type { Track } from "@/lib/types";
 export function CatalogScroller({
   tracks,
   queue,
+  favoriteIds = [],
 }: {
   tracks: Track[];
   /** Full catalog for continuous autoplay (defaults to visible tracks). */
   queue?: Track[];
+  favoriteIds?: string[];
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
   const [duration, setDuration] = useState(40);
   const playQueue = queue ?? tracks;
+  const favoriteSet = new Set(favoriteIds);
 
   useEffect(() => {
     const el = trackRef.current;
@@ -65,7 +68,11 @@ export function CatalogScroller({
               className="w-[42vw] max-w-[200px] min-w-[148px] shrink-0 sm:w-[180px] sm:max-w-none"
               aria-hidden={i >= tracks.length}
             >
-              <TrackCard track={track} queue={playQueue} />
+              <TrackCard
+                track={track}
+                queue={playQueue}
+                favorited={favoriteSet.has(track.id)}
+              />
             </div>
           ))}
         </div>

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ShareButton } from "@/components/ShareButton";
 import { TrackCard } from "@/components/TrackCard";
 import { getArtistBySlug } from "@/lib/artists";
 import { profileHasSocials } from "@/lib/news-store";
 import type { SocialPlatform } from "@/lib/news-types";
+import { artistShareMetadata } from "@/lib/share-metadata";
 import { socialProfileUrl } from "@/lib/social-sync";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -15,10 +17,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const artist = await getArtistBySlug(slug);
   if (!artist) return { title: "Artist" };
-  return {
-    title: artist.name,
-    description: `Listen to and download tracks by ${artist.name} on Sharp Music.`,
-  };
+  const genres = [...new Set(artist.tracks.map((t) => t.genre))];
+  const cover = artist.tracks.find((t) => t.coverImageUrl)?.coverImageUrl;
+  return artistShareMetadata({
+    name: artist.name,
+    slug: artist.slug,
+    trackCount: artist.tracks.length,
+    coverImageUrl: cover,
+    genres,
+  });
 }
 
 export default async function ArtistPage({ params }: Props) {
@@ -26,16 +33,17 @@ export default async function ArtistPage({ params }: Props) {
   const artist = await getArtistBySlug(slug);
   if (!artist) notFound();
 
-  const socials = artist.profile && profileHasSocials(artist.profile)
-    ? (
-        [
-          ["instagram", artist.profile.instagram],
-          ["facebook", artist.profile.facebook],
-          ["threads", artist.profile.threads],
-          ["twitter", artist.profile.twitter],
-        ] as const
-      ).filter(([, handle]) => handle)
-    : [];
+  const socials =
+    artist.profile && profileHasSocials(artist.profile)
+      ? (
+          [
+            ["instagram", artist.profile.instagram],
+            ["facebook", artist.profile.facebook],
+            ["threads", artist.profile.threads],
+            ["twitter", artist.profile.twitter],
+          ] as const
+        ).filter(([, handle]) => handle)
+      : [];
 
   const regions = [...new Set(artist.tracks.map((t) => t.region))];
   const genres = [...new Set(artist.tracks.map((t) => t.genre))];
@@ -56,21 +64,24 @@ export default async function ArtistPage({ params }: Props) {
           {regions.length ? ` · ${regions.slice(0, 2).join(", ")}` : ""}
         </p>
 
-        {socials.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-3 text-sm">
-            {socials.map(([platform, handle]) => (
-              <a
-                key={platform}
-                href={socialProfileUrl(platform as SocialPlatform, handle)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[color:var(--signal)] hover:underline"
-              >
-                {platform === "twitter" ? "X" : platform} →
-              </a>
-            ))}
-          </div>
-        )}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {socials.map(([platform, handle]) => (
+            <a
+              key={platform}
+              href={socialProfileUrl(platform as SocialPlatform, handle)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[color:var(--signal)] hover:underline"
+            >
+              {platform === "twitter" ? "X" : platform} →
+            </a>
+          ))}
+          <ShareButton
+            title={`${artist.name} · Sharp Music`}
+            text={`Listen to ${artist.name} on Sharp Music`}
+            urlPath={`/artist/${artist.slug}`}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">

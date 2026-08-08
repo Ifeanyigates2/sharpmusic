@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordTrackDownload } from "@/lib/charts";
 import { getTrackById } from "@/lib/store";
 import { hasPurchased } from "@/lib/purchases";
 
@@ -25,6 +26,8 @@ export async function GET(_request: Request, { params }: Params) {
       { status: 502 },
     );
   }
+
+  void recordTrackDownload(track.id);
 
   const filename = `${track.artist} - ${track.title}.mp3`.replace(
     /[^\w\s.-]/g,
