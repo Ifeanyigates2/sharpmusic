@@ -18,6 +18,8 @@ type PlayerContextValue = {
   playing: boolean;
   progress: number;
   duration: number;
+  nextReason: string | null;
+  nextSource: "gemini" | "fallback" | null;
   playTrack: (track: Track, queue?: Track[]) => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -29,6 +31,8 @@ type PlayerContextValue = {
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
 
+const MAX_HISTORY = 15;
+
 function nextIndex(queue: Track[], currentId: string, delta: number) {
   if (queue.length === 0) return -1;
   const idx = queue.findIndex((t) => t.id === currentId);
@@ -38,38 +42,176 @@ function nextIndex(queue: Track[], currentId: string, delta: number) {
   return next;
 }
 
+type RadioNextResponse = {
+  track?: Track;
+  reason?: string;
+  source?: "gemini" | "fallback";
+  error?: string;
+};
+
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const queueRef = useRef<Track[]>([]);
   const currentRef = useRef<Track | null>(null);
-  const loadTrackRef = useRef<(track: Track) => void>(() => {});
+  const historyRef = useRef<string[]>([]);
+  const loadTrackRef = useRef<(track: Track, meta?: { reason?: string; source?: "gemini" | "fallback" }) => void>(
+    () => {},
+  );
+  const resolveNextRef = useRef<() => Promise<void>>(async () => {});
+  const prefetchRef = useRef<{
+    fromId: string;
+    track: Track;
+    reason: string;
+    source: "gemini" | "fallback";
+  } | null>(null);
+  const prefetchAbortRef = useRef<AbortController | null>(null);
 
   const [current, setCurrent] = useState<Track | null>(null);
   const [queue, setQueue] = useState<Track[]>([]);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [nextReason, setNextReason] = useState<string | null>(null);
+  const [nextSource, setNextSource] = useState<"gemini" | "fallback" | null>(
+    null,
+  );
   const durationRef = useRef(0);
 
-  const loadTrack = useCallback((track: Track) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    setCurrent(track);
-    currentRef.current = track;
-    setProgress(0);
-    const fallbackDur = track.durationSec || 0;
-    durationRef.current = fallbackDur;
-    setDuration(fallbackDur);
-    audio.src = trackStreamUrl(track.id);
-    void audio.play().catch(() => {
-      setPlaying(false);
-    });
+  const rememberPlayed = useCallback((trackId: string) => {
+    const next = [
+      trackId,
+      ...historyRef.current.filter((id) => id !== trackId),
+    ].slice(0, MAX_HISTORY);
+    historyRef.current = next;
   }, []);
+
+  const sequentialFallback = useCallback((cur: Track): Track | null => {
+    const q = queueRef.current;
+    const idx = nextIndex(q, cur.id, 1);
+    if (idx >= 0) return q[idx];
+    if (q.length > 1) return q[0];
+    return null;
+  }, []);
+
+  const fetchAiNext = useCallback(
+    async (cur: Track, signal?: AbortSignal) => {
+      const candidateIds = queueRef.current.map((t) => t.id);
+      const res = await fetch("/api/radio/next", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentId: cur.id,
+          recentIds: historyRef.current,
+          candidateIds:
+            candidateIds.length > 1 ? candidateIds : undefined,
+        }),
+        signal,
+      });
+      const data = (await res.json()) as RadioNextResponse;
+      if (!res.ok || !data.track) {
+        throw new Error(data.error || "Could not pick next track");
+      }
+      return {
+        track: data.track,
+        reason: data.reason || "AI pick",
+        source: data.source === "gemini" ? "gemini" : "fallback",
+      } as const;
+    },
+    [],
+  );
+
+  const prefetchNext = useCallback(
+    (from: Track) => {
+      prefetchAbortRef.current?.abort();
+      const controller = new AbortController();
+      prefetchAbortRef.current = controller;
+      prefetchRef.current = null;
+
+      void (async () => {
+        try {
+          const pick = await fetchAiNext(from, controller.signal);
+          if (controller.signal.aborted) return;
+          if (currentRef.current?.id !== from.id) return;
+          prefetchRef.current = {
+            fromId: from.id,
+            track: pick.track,
+            reason: pick.reason,
+            source: pick.source,
+          };
+        } catch {
+          // Prefetch is best-effort; ended/skip will resolve live
+        }
+      })();
+    },
+    [fetchAiNext],
+  );
+
+  const loadTrack = useCallback(
+    (
+      track: Track,
+      meta?: { reason?: string; source?: "gemini" | "fallback" },
+    ) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      if (currentRef.current) {
+        rememberPlayed(currentRef.current.id);
+      }
+
+      setCurrent(track);
+      currentRef.current = track;
+      setProgress(0);
+      const fallbackDur = track.durationSec || 0;
+      durationRef.current = fallbackDur;
+      setDuration(fallbackDur);
+      setNextReason(meta?.reason ?? null);
+      setNextSource(meta?.source ?? null);
+      prefetchRef.current = null;
+      audio.src = trackStreamUrl(track.id);
+      void audio.play().catch(() => {
+        setPlaying(false);
+      });
+      prefetchNext(track);
+    },
+    [prefetchNext, rememberPlayed],
+  );
+
+  const resolveAndPlayNext = useCallback(async () => {
+    const cur = currentRef.current;
+    if (!cur) {
+      setPlaying(false);
+      return;
+    }
+
+    const pref = prefetchRef.current;
+    if (pref && pref.fromId === cur.id) {
+      loadTrack(pref.track, { reason: pref.reason, source: pref.source });
+      return;
+    }
+
+    try {
+      const pick = await fetchAiNext(cur);
+      loadTrack(pick.track, { reason: pick.reason, source: pick.source });
+    } catch {
+      const fallback = sequentialFallback(cur);
+      if (fallback) {
+        loadTrack(fallback, {
+          reason: "Next in catalog",
+          source: "fallback",
+        });
+      } else {
+        setPlaying(false);
+      }
+    }
+  }, [fetchAiNext, loadTrack, sequentialFallback]);
 
   useEffect(() => {
     loadTrackRef.current = loadTrack;
   }, [loadTrack]);
+
+  useEffect(() => {
+    resolveNextRef.current = resolveAndPlayNext;
+  }, [resolveAndPlayNext]);
 
   useEffect(() => {
     const audio = new Audio();
@@ -92,23 +234,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
     };
     const onEnded = () => {
-      const q = queueRef.current;
-      const cur = currentRef.current;
-      if (!cur) {
-        setPlaying(false);
-        return;
-      }
-      const idx = nextIndex(q, cur.id, 1);
-      if (idx >= 0) {
-        loadTrackRef.current(q[idx]);
-        return;
-      }
-      // Continuous streaming: wrap to the start of the catalog queue
-      if (q.length > 1) {
-        loadTrackRef.current(q[0]);
-        return;
-      }
-      setPlaying(false);
+      void resolveNextRef.current();
     };
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
@@ -121,6 +247,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("pause", onPause);
 
     return () => {
+      prefetchAbortRef.current?.abort();
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
@@ -157,12 +284,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   );
 
   const playNext = useCallback(() => {
-    const cur = currentRef.current;
-    if (!cur) return;
-    const idx = nextIndex(queueRef.current, cur.id, 1);
-    if (idx >= 0) loadTrack(queueRef.current[idx]);
-    else if (queueRef.current.length > 1) loadTrack(queueRef.current[0]);
-  }, [loadTrack]);
+    void resolveAndPlayNext();
+  }, [resolveAndPlayNext]);
 
   const playPrevious = useCallback(() => {
     const audio = audioRef.current;
@@ -209,10 +332,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const currentId = current?.id;
-  const hasNext = Boolean(
-    currentId &&
-      (nextIndex(queue, currentId, 1) >= 0 || queue.length > 1),
-  );
+  const hasNext = Boolean(currentId && queue.length > 0);
   const hasPrevious = Boolean(
     currentId &&
       (nextIndex(queue, currentId, -1) >= 0 ||
@@ -228,6 +348,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         playing,
         progress,
         duration,
+        nextReason,
+        nextSource,
         playTrack,
         playNext,
         playPrevious,

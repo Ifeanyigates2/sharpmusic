@@ -13,6 +13,8 @@ export function AudioPlayer() {
     playing,
     progress,
     duration,
+    nextReason,
+    nextSource,
     toggle,
     seek,
     playNext,
@@ -59,6 +61,11 @@ export function AudioPlayer() {
           <p className="truncate text-xs text-[color:var(--mist)]">
             {current.artist} · {current.country}
           </p>
+          {nextReason && (
+            <p className="mt-0.5 truncate text-[10px] text-[color:var(--signal)]/80">
+              {nextSource === "gemini" ? "Gemini" : "Auto"} · {nextReason}
+            </p>
+          )}
 
           <div className="mt-2 flex items-center gap-2">
             <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-[color:var(--mist)] sm:w-10 sm:text-xs">
